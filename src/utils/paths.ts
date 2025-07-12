@@ -3,32 +3,32 @@ import { fileURLToPath } from "url";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import fs from "fs";
 
-// 取得專案根目錄
+// Obtain the project root directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, "../..");
 
-// 全局 server 實例
+// Global server instance
 let globalServer: Server | null = null;
 
 /**
- * 設置全局 server 實例
+ * Setting up a global server instance
  */
 export function setGlobalServer(server: Server): void {
   globalServer = server;
 }
 
 /**
- * 獲取全局 server 實例
+ * Get global server instance
  */
 export function getGlobalServer(): Server | null {
   return globalServer;
 }
 
 /**
- * 取得 DATA_DIR 路徑
- * 如果有 server 且支援 listRoots，則使用第一筆 file:// 開頭的 root + "/data"
- * 否則使用環境變數或專案根目錄
+ * Get the DATA_DIR path
+ * If there is a server and supports listRoots, use root + "/data" starting with the first file://
+ * Otherwise, use environment variables or project root directory
  */
 export async function getDataDir(): Promise<string> {
   const server = getGlobalServer();
@@ -38,13 +38,13 @@ export async function getDataDir(): Promise<string> {
     try {
       const roots = await server.listRoots();
 
-      // 找出第一筆 file:// 開頭的 root
+      // Find the first root at the beginning of file://
       if (roots.roots && roots.roots.length > 0) {
         const firstFileRoot = roots.roots.find((root) =>
           root.uri.startsWith("file://")
         );
         if (firstFileRoot) {
-          // 從 file:// URI 中提取實際路徑
+          // Extract the actual path from the file://URI
           rootPath = firstFileRoot.uri.replace("file://", "");
         }
       }
@@ -53,39 +53,39 @@ export async function getDataDir(): Promise<string> {
     }
   }
 
-  // 處理 process.env.DATA_DIR
+  // Process process.env.DATA_DIR
   if (process.env.DATA_DIR) {
     if (path.isAbsolute(process.env.DATA_DIR)) {
-      // 如果 DATA_DIR 是絕對路徑，返回 "DATA_DIR/rootPath最後一個資料夾名稱"
+      // If DATA_DIR is an absolute path, return "DATA_DIR/rootPath last folder name"
       if (rootPath) {
         const lastFolderName = path.basename(rootPath);
         return path.join(process.env.DATA_DIR, lastFolderName);
       } else {
-        // 如果沒有 rootPath，直接返回 DATA_DIR
+        // If there is no rootPath, return DATA_DIR directly
         return process.env.DATA_DIR;
       }
     } else {
-      // 如果 DATA_DIR 是相對路徑，返回 "rootPath/DATA_DIR"
+      // If DATA_DIR is a relative path, return "rootPath/DATA_DIR"
       if (rootPath) {
         return path.join(rootPath, process.env.DATA_DIR);
       } else {
-        // 如果沒有 rootPath，使用 PROJECT_ROOT
+        // If rootPath is not available, use PROJECT_ROOT
         return path.join(PROJECT_ROOT, process.env.DATA_DIR);
       }
     }
   }
 
-  // 如果沒有 DATA_DIR，使用預設邏輯
+  // If there is no DATA_DIR, use preset logic
   if (rootPath) {
     return path.join(rootPath, "data");
   }
 
-  // 最後回退到專案根目錄
+  // Finally, back to the project root directory
   return path.join(PROJECT_ROOT, "data");
 }
 
 /**
- * 取得任務檔案路徑
+ * Obtain the task file path
  */
 export async function getTasksFilePath(): Promise<string> {
   const dataDir = await getDataDir();
@@ -93,7 +93,7 @@ export async function getTasksFilePath(): Promise<string> {
 }
 
 /**
- * 取得記憶體資料夾路徑
+ * Get the memory folder path
  */
 export async function getMemoryDir(): Promise<string> {
   const dataDir = await getDataDir();
@@ -101,7 +101,7 @@ export async function getMemoryDir(): Promise<string> {
 }
 
 /**
- * 取得 WebGUI 檔案路徑
+ * Get the WebGUI file path
  */
 export async function getWebGuiFilePath(): Promise<string> {
   const dataDir = await getDataDir();
@@ -109,7 +109,7 @@ export async function getWebGuiFilePath(): Promise<string> {
 }
 
 /**
- * 取得專案根目錄
+ * Obtain the project root directory
  */
 export function getProjectRoot(): string {
   return PROJECT_ROOT;

@@ -15,19 +15,19 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { getDataDir, getTasksFilePath, getMemoryDir } from "../utils/paths.js";
 
-// 確保獲取專案資料夾路徑
+// Make sure to get the path to the project folder
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, "../..");
 
-// 數據文件路徑（改為異步獲取）
+// Data file path (changed asynchronously)
 // const DATA_DIR = getDataDir();
 // const TASKS_FILE = getTasksFilePath();
 
-// 將exec轉換為Promise形式
+// Convert exec to promise form
 const execPromise = promisify(exec);
 
-// 確保數據目錄存在
+// Make sure the data directory exists
 async function ensureDataDir() {
   const DATA_DIR = await getDataDir();
   const TASKS_FILE = await getTasksFilePath();
@@ -45,14 +45,14 @@ async function ensureDataDir() {
   }
 }
 
-// 讀取所有任務
+// Read all tasks
 async function readTasks(): Promise<Task[]> {
   await ensureDataDir();
   const TASKS_FILE = await getTasksFilePath();
   const data = await fs.readFile(TASKS_FILE, "utf-8");
   const tasks = JSON.parse(data).tasks;
 
-  // 將日期字串轉換回 Date 物件
+  // Convert date string back to Date object
   return tasks.map((task: any) => ({
     ...task,
     createdAt: task.createdAt ? new Date(task.createdAt) : new Date(),
@@ -61,25 +61,25 @@ async function readTasks(): Promise<Task[]> {
   }));
 }
 
-// 寫入所有任務
+// Write to all tasks
 async function writeTasks(tasks: Task[]): Promise<void> {
   await ensureDataDir();
   const TASKS_FILE = await getTasksFilePath();
   await fs.writeFile(TASKS_FILE, JSON.stringify({ tasks }, null, 2));
 }
 
-// 獲取所有任務
+// Get all tasks
 export async function getAllTasks(): Promise<Task[]> {
   return await readTasks();
 }
 
-// 根據ID獲取任務
+// Get tasks based on id
 export async function getTaskById(taskId: string): Promise<Task | null> {
   const tasks = await readTasks();
   return tasks.find((task) => task.id === taskId) || null;
 }
 
-// 創建新任務
+// Create a new task
 export async function createTask(
   name: string,
   description: string,
@@ -111,7 +111,7 @@ export async function createTask(
   return newTask;
 }
 
-// 更新任務
+// Update tasks
 export async function updateTask(
   taskId: string,
   updates: Partial<Task>
@@ -123,9 +123,9 @@ export async function updateTask(
     return null;
   }
 
-  // 檢查任務是否已完成，已完成的任務不允許更新（除非是明確允許的欄位）
+  // Check whether the task has been completed. Completed tasks are not allowed to be updated (unless it is an explicitly allowed field)
   if (tasks[taskIndex].status === TaskStatus.COMPLETED) {
-    // 僅允許更新 summary 欄位（任務摘要）和 relatedFiles 欄位
+    // Only updates to the summary field (task summary) and relatedFiles field are allowed
     const allowedFields = ["summary", "relatedFiles"];
     const attemptedFields = Object.keys(updates);
 
@@ -149,7 +149,7 @@ export async function updateTask(
   return tasks[taskIndex];
 }
 
-// 更新任務狀態
+// Update task status
 export async function updateTaskStatus(
   taskId: string,
   status: TaskStatus
@@ -163,7 +163,7 @@ export async function updateTaskStatus(
   return await updateTask(taskId, updates);
 }
 
-// 更新任務摘要
+// Update task summary
 export async function updateTaskSummary(
   taskId: string,
   summary: string
@@ -171,7 +171,7 @@ export async function updateTaskSummary(
   return await updateTask(taskId, { summary });
 }
 
-// 更新任務內容
+// Update the task content
 export async function updateTaskContent(
   taskId: string,
   updates: {
@@ -184,19 +184,19 @@ export async function updateTaskContent(
     verificationCriteria?: string;
   }
 ): Promise<{ success: boolean; message: string; task?: Task }> {
-  // 獲取任務並檢查是否存在
+  // Get the task and check if it exists
   const task = await getTaskById(taskId);
 
   if (!task) {
-    return { success: false, message: "找不到指定任務" };
+    return { success: false, message: "The specified task cannot be found" };
   }
 
-  // 檢查任務是否已完成
+  // Check if the task has been completed
   if (task.status === TaskStatus.COMPLETED) {
-    return { success: false, message: "無法更新已完成的任務" };
+    return { success: false, message: "Unable to update completed tasks" };
   }
 
-  // 構建更新物件，只包含實際需要更新的欄位
+  // Build an updated object, including only the columns that actually need to be updated
   const updateObj: Partial<Task> = {};
 
   if (updates.name !== undefined) {
@@ -229,57 +229,57 @@ export async function updateTaskContent(
     updateObj.verificationCriteria = updates.verificationCriteria;
   }
 
-  // 如果沒有要更新的內容，提前返回
+  // If there is no content to be updated, return in advance
   if (Object.keys(updateObj).length === 0) {
-    return { success: true, message: "沒有提供需要更新的內容", task };
+    return { success: true, message: "No content required updates are provided", task };
   }
 
-  // 執行更新
+  // Perform updates
   const updatedTask = await updateTask(taskId, updateObj);
 
   if (!updatedTask) {
-    return { success: false, message: "更新任務時發生錯誤" };
+    return { success: false, message: "An error occurred while updating a task" };
   }
 
   return {
     success: true,
-    message: "任務內容已成功更新",
+    message: "Task content has been successfully updated",
     task: updatedTask,
   };
 }
 
-// 更新任務相關文件
+// Update task-related files
 export async function updateTaskRelatedFiles(
   taskId: string,
   relatedFiles: RelatedFile[]
 ): Promise<{ success: boolean; message: string; task?: Task }> {
-  // 獲取任務並檢查是否存在
+  // Get the task and check if it exists
   const task = await getTaskById(taskId);
 
   if (!task) {
-    return { success: false, message: "找不到指定任務" };
+    return { success: false, message: "The specified task cannot be found" };
   }
 
-  // 檢查任務是否已完成
+  // Check if the task has been completed
   if (task.status === TaskStatus.COMPLETED) {
-    return { success: false, message: "無法更新已完成的任務" };
+    return { success: false, message: "Unable to update completed tasks" };
   }
 
-  // 執行更新
+  // Perform updates
   const updatedTask = await updateTask(taskId, { relatedFiles });
 
   if (!updatedTask) {
-    return { success: false, message: "更新任務相關文件時發生錯誤" };
+    return { success: false, message: "An error occurred while updating the task-related files" };
   }
 
   return {
     success: true,
-    message: `已成功更新任務相關文件，共 ${relatedFiles.length} 個文件`,
+    message: `The task-related files have been successfully updated, totaling ${relatedFiles.length} files`,
     task: updatedTask,
   };
 }
 
-// 批量創建或更新任務
+// Bulk creation or update tasks
 export async function batchCreateOrUpdateTasks(
   taskDataList: Array<{
     name: string;
@@ -287,109 +287,109 @@ export async function batchCreateOrUpdateTasks(
     notes?: string;
     dependencies?: string[];
     relatedFiles?: RelatedFile[];
-    implementationGuide?: string; // 新增：實現指南
-    verificationCriteria?: string; // 新增：驗證標準
+    implementationGuide?: string; // New: Implementation Guide
+    verificationCriteria?: string; // New: Verification Standard
   }>,
-  updateMode: "append" | "overwrite" | "selective" | "clearAllTasks", // 必填參數，指定任務更新策略
-  globalAnalysisResult?: string // 新增：全局分析結果
+  updateMode: "append" | "overwrite" | "selective" | "clearAllTasks", // Required parameters, specify task update strategy
+  globalAnalysisResult?: string // New: Global analysis results
 ): Promise<Task[]> {
-  // 讀取現有的所有任務
+  // Read all existing tasks
   const existingTasks = await readTasks();
 
-  // 根據更新模式處理現有任務
+  // Process existing tasks according to update mode
   let tasksToKeep: Task[] = [];
 
   if (updateMode === "append") {
-    // 追加模式：保留所有現有任務
+    // Append mode: Keep all existing tasks
     tasksToKeep = [...existingTasks];
   } else if (updateMode === "overwrite") {
-    // 覆蓋模式：僅保留已完成的任務，清除所有未完成任務
+    // Overwrite mode: Only completed tasks are kept, clear all unfinished tasks
     tasksToKeep = existingTasks.filter(
       (task) => task.status === TaskStatus.COMPLETED
     );
   } else if (updateMode === "selective") {
-    // 選擇性更新模式：根據任務名稱選擇性更新，保留未在更新列表中的任務
-    // 1. 提取待更新任務的名稱清單
+    // Selective update mode: selectively update based on the task name, retaining tasks that are not in the update list
+    // 1. Extract the list of names of tasks to be updated
     const updateTaskNames = new Set(taskDataList.map((task) => task.name));
 
-    // 2. 保留所有沒有出現在更新列表中的任務
+    // 2. Keep all tasks that do not appear in the update list
     tasksToKeep = existingTasks.filter(
       (task) => !updateTaskNames.has(task.name)
     );
   } else if (updateMode === "clearAllTasks") {
-    // 清除所有任務模式：清空任務列表
+    // Clear all task modes: Clear the task list
     tasksToKeep = [];
   }
 
-  // 這個映射將用於存儲名稱到任務ID的映射，用於支持通過名稱引用任務
+  // This mapping will be used to store a name to task id mapping, which supports referencing tasks by name
   const taskNameToIdMap = new Map<string, string>();
 
-  // 對於選擇性更新模式，先將現有任務的名稱和ID記錄下來
+  // For selective update mode, first record the name and id of the existing task
   if (updateMode === "selective") {
     existingTasks.forEach((task) => {
       taskNameToIdMap.set(task.name, task.id);
     });
   }
 
-  // 記錄所有任務的名稱和ID，無論是要保留的任務還是新建的任務
-  // 這將用於稍後解析依賴關係
+  // Record the names and IDs of all tasks, whether they are retained or newly created tasks
+  // This will be used to parse dependencies later
   tasksToKeep.forEach((task) => {
     taskNameToIdMap.set(task.name, task.id);
   });
 
-  // 創建新任務的列表
+  // Create a list of new tasks
   const newTasks: Task[] = [];
 
   for (const taskData of taskDataList) {
-    // 檢查是否為選擇性更新模式且該任務名稱已存在
+    // Check if it is selective update mode and the task name already exists
     if (updateMode === "selective" && taskNameToIdMap.has(taskData.name)) {
-      // 獲取現有任務的ID
+      // Get the id of the existing task
       const existingTaskId = taskNameToIdMap.get(taskData.name)!;
 
-      // 查找現有任務
+      // Find existing tasks
       const existingTaskIndex = existingTasks.findIndex(
         (task) => task.id === existingTaskId
       );
 
-      // 如果找到現有任務並且該任務未完成，則更新它
+      // If an existing task is found and the task is not completed, update it
       if (
         existingTaskIndex !== -1 &&
         existingTasks[existingTaskIndex].status !== TaskStatus.COMPLETED
       ) {
         const taskToUpdate = existingTasks[existingTaskIndex];
 
-        // 更新任務的基本信息，但保留原始ID、創建時間等
+        // Update basic information of the task, but retain the original id, creation time, etc.
         const updatedTask: Task = {
           ...taskToUpdate,
           name: taskData.name,
           description: taskData.description,
           notes: taskData.notes,
-          // 後面會處理 dependencies
+          // Dependencies will be processed later
           updatedAt: new Date(),
-          // 新增：保存實現指南（如果有）
+          // New: Save implementation guide (if any)
           implementationGuide: taskData.implementationGuide,
-          // 新增：保存驗證標準（如果有）
+          // New: Save verification criteria (if any)
           verificationCriteria: taskData.verificationCriteria,
-          // 新增：保存全局分析結果（如果有）
+          // New: Save global analysis results (if any)
           analysisResult: globalAnalysisResult,
         };
 
-        // 處理相關文件（如果有）
+        // Process related files (if any)
         if (taskData.relatedFiles) {
           updatedTask.relatedFiles = taskData.relatedFiles;
         }
 
-        // 將更新後的任務添加到新任務列表
+        // Add updated tasks to the new task list
         newTasks.push(updatedTask);
 
-        // 從tasksToKeep中移除此任務，因為它已經被更新並添加到newTasks中了
+        // Remove this task from tasks to keep because it has been updated and added to new tasks
         tasksToKeep = tasksToKeep.filter((task) => task.id !== existingTaskId);
       }
     } else {
-      // 創建新任務
+      // Create a new task
       const newTaskId = uuidv4();
 
-      // 將新任務的名稱和ID添加到映射中
+      // Add the name and id of the new task to the map
       taskNameToIdMap.set(taskData.name, newTaskId);
 
       const newTask: Task = {
@@ -398,15 +398,15 @@ export async function batchCreateOrUpdateTasks(
         description: taskData.description,
         notes: taskData.notes,
         status: TaskStatus.PENDING,
-        dependencies: [], // 後面會填充
+        dependencies: [], // It will be filled later
         createdAt: new Date(),
         updatedAt: new Date(),
         relatedFiles: taskData.relatedFiles,
-        // 新增：保存實現指南（如果有）
+        // New: Save implementation guide (if any)
         implementationGuide: taskData.implementationGuide,
-        // 新增：保存驗證標準（如果有）
+        // New: Save verification criteria (if any)
         verificationCriteria: taskData.verificationCriteria,
-        // 新增：保存全局分析結果（如果有）
+        // New: Save global analysis results (if any)
         analysisResult: globalAnalysisResult,
       };
 
@@ -414,38 +414,38 @@ export async function batchCreateOrUpdateTasks(
     }
   }
 
-  // 處理任務之間的依賴關係
+  // Handle dependencies between tasks
   for (let i = 0; i < taskDataList.length; i++) {
     const taskData = taskDataList[i];
     const newTask = newTasks[i];
 
-    // 如果存在依賴關係，處理它們
+    // If dependencies exist, process them
     if (taskData.dependencies && taskData.dependencies.length > 0) {
       const resolvedDependencies: TaskDependency[] = [];
 
       for (const dependencyName of taskData.dependencies) {
-        // 首先嘗試將依賴項解釋為任務ID
+        // First try to interpret the dependency as task id
         let dependencyTaskId = dependencyName;
 
-        // 如果依賴項看起來不像UUID，則嘗試將其解釋為任務名稱
+        // If the dependency doesn't look like uuid, try to interpret it as the task name
         if (
           !dependencyName.match(
             /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
           )
         ) {
-          // 如果映射中存在此名稱，則使用對應的ID
+          // If this name exists in the map, the corresponding id is used
           if (taskNameToIdMap.has(dependencyName)) {
             dependencyTaskId = taskNameToIdMap.get(dependencyName)!;
           } else {
-            continue; // 跳過此依賴
+            continue; // Skip this dependency
           }
         } else {
-          // 是UUID格式，但需要確認此ID是否對應實際存在的任務
+          // It is in uuid format, but it is necessary to confirm whether this id corresponds to the actual existing task.
           const idExists = [...tasksToKeep, ...newTasks].some(
             (task) => task.id === dependencyTaskId
           );
           if (!idExists) {
-            continue; // 跳過此依賴
+            continue; // Skip this dependency
           }
         }
 
@@ -456,16 +456,16 @@ export async function batchCreateOrUpdateTasks(
     }
   }
 
-  // 合併保留的任務和新任務
+  // Merge retained tasks and new tasks
   const allTasks = [...tasksToKeep, ...newTasks];
 
-  // 寫入更新後的任務列表
+  // Write to the updated task list
   await writeTasks(allTasks);
 
   return newTasks;
 }
 
-// 檢查任務是否可以執行（所有依賴都已完成）
+// Check if the task can be executed (all dependencies have been completed)
 export async function canExecuteTask(
   taskId: string
 ): Promise<{ canExecute: boolean; blockedBy?: string[] }> {
@@ -476,11 +476,11 @@ export async function canExecuteTask(
   }
 
   if (task.status === TaskStatus.COMPLETED) {
-    return { canExecute: false }; // 已完成的任務不需要再執行
+    return { canExecute: false }; // Completed tasks do not need to be executed again
   }
 
   if (task.dependencies.length === 0) {
-    return { canExecute: true }; // 沒有依賴的任務可以直接執行
+    return { canExecute: true }; // Tasks without dependencies can be executed directly
   }
 
   const allTasks = await readTasks();
@@ -500,7 +500,7 @@ export async function canExecuteTask(
   };
 }
 
-// 刪除任務
+// Delete a task
 export async function deleteTask(
   taskId: string
 ): Promise<{ success: boolean; message: string }> {
@@ -508,15 +508,15 @@ export async function deleteTask(
   const taskIndex = tasks.findIndex((task) => task.id === taskId);
 
   if (taskIndex === -1) {
-    return { success: false, message: "找不到指定任務" };
+    return { success: false, message: "The specified task cannot be found" };
   }
 
-  // 檢查任務狀態，已完成的任務不允許刪除
+  // Check the task status, completed tasks are not allowed to be deleted
   if (tasks[taskIndex].status === TaskStatus.COMPLETED) {
-    return { success: false, message: "無法刪除已完成的任務" };
+    return { success: false, message: "Unable to delete completed tasks" };
   }
 
-  // 檢查是否有其他任務依賴此任務
+  // Check if there are other tasks that depend on this task
   const allTasks = tasks.filter((_, index) => index !== taskIndex);
   const dependentTasks = allTasks.filter((task) =>
     task.dependencies.some((dep) => dep.taskId === taskId)
@@ -528,18 +528,18 @@ export async function deleteTask(
       .join(", ");
     return {
       success: false,
-      message: `無法刪除此任務，因為以下任務依賴於它: ${dependentTaskNames}`,
+      message: `This task cannot be deleted because the following task depends on it: ${dependentTaskNames}`,
     };
   }
 
-  // 執行刪除操作
+  // Perform a delete operation
   tasks.splice(taskIndex, 1);
   await writeTasks(tasks);
 
-  return { success: true, message: "任務刪除成功" };
+  return { success: true, message: "Task deletion successfully" };
 }
 
-// 評估任務複雜度
+// Assess task complexity
 export async function assessTaskComplexity(
   taskId: string
 ): Promise<TaskComplexityAssessment | null> {
@@ -549,16 +549,16 @@ export async function assessTaskComplexity(
     return null;
   }
 
-  // 評估各項指標
+  // Evaluate various indicators
   const descriptionLength = task.description.length;
   const dependenciesCount = task.dependencies.length;
   const notesLength = task.notes ? task.notes.length : 0;
   const hasNotes = !!task.notes;
 
-  // 基於各項指標評估複雜度級別
+  // Evaluate complexity levels based on various indicators
   let level = TaskComplexityLevel.LOW;
 
-  // 描述長度評估
+  // Description length evaluation
   if (
     descriptionLength >= TaskComplexityThresholds.DESCRIPTION_LENGTH.VERY_HIGH
   ) {
@@ -573,7 +573,7 @@ export async function assessTaskComplexity(
     level = TaskComplexityLevel.MEDIUM;
   }
 
-  // 依賴數量評估（取最高級別）
+  // Dependency quantity evaluation (take the highest level)
   if (
     dependenciesCount >= TaskComplexityThresholds.DEPENDENCIES_COUNT.VERY_HIGH
   ) {
@@ -591,7 +591,7 @@ export async function assessTaskComplexity(
     level = TaskComplexityLevel.MEDIUM;
   }
 
-  // 注記長度評估（取最高級別）
+  // Note the length evaluation (take the highest level)
   if (notesLength >= TaskComplexityThresholds.NOTES_LENGTH.VERY_HIGH) {
     level = TaskComplexityLevel.VERY_HIGH;
   } else if (
@@ -607,55 +607,53 @@ export async function assessTaskComplexity(
     level = TaskComplexityLevel.MEDIUM;
   }
 
-  // 根據複雜度級別生成處理建議
+  // Generate processing suggestions based on complexity level
   const recommendations: string[] = [];
-
-  // 低複雜度任務建議
+//Recommended for low-complexity tasks
   if (level === TaskComplexityLevel.LOW) {
-    recommendations.push("此任務複雜度較低，可直接執行");
-    recommendations.push("建議設定清晰的完成標準，確保驗收有明確依據");
+    recommendations.push("This task is relatively complex and can be executed directly");
+    recommendations.push("It is recommended to set clear completion standards to ensure that acceptance is clear basis");
   }
-  // 中等複雜度任務建議
+  //Medium complex task recommendations
   else if (level === TaskComplexityLevel.MEDIUM) {
-    recommendations.push("此任務具有一定複雜性，建議詳細規劃執行步驟");
-    recommendations.push("可分階段執行並定期檢查進度，確保理解準確且實施完整");
+    recommendations.push("This task has some complexity, it is recommended to plan the execution steps in detail");
+    recommendations.push("can be performed in phases and periodically checked to ensure accurate understanding and complete implementation");
     if (dependenciesCount > 0) {
-      recommendations.push("注意檢查所有依賴任務的完成狀態和輸出質量");
+      recommendations.push("Please check the completion status and output quality of all dependent tasks");
     }
   }
-  // 高複雜度任務建議
+//High complexity task suggestions
   else if (level === TaskComplexityLevel.HIGH) {
-    recommendations.push("此任務複雜度較高，建議先進行充分的分析和規劃");
-    recommendations.push("考慮將任務拆分為較小的、可獨立執行的子任務");
-    recommendations.push("建立清晰的里程碑和檢查點，便於追蹤進度和品質");
+    recommendations.push("This task is more complex, it is recommended to conduct sufficient analysis and planning first");
+    recommendations.push("Consider splitting the task into smaller, independently executable subtasks");
+    recommendations.push("Create clear milestones and checkpoints for easy tracking of progress and quality");
     if (
       dependenciesCount > TaskComplexityThresholds.DEPENDENCIES_COUNT.MEDIUM
     ) {
       recommendations.push(
-        "依賴任務較多，建議製作依賴關係圖，確保執行順序正確"
+        "There are many dependencies, so it is recommended to create a dependency diagram to ensure the execution order is correct."
       );
     }
-  }
-  // 極高複雜度任務建議
+  }//Extremely complex tasks recommendations
   else if (level === TaskComplexityLevel.VERY_HIGH) {
-    recommendations.push("⚠️ 此任務複雜度極高，強烈建議拆分為多個獨立任務");
+    recommendations.push("⚠️ This task is extremely complex and it is highly recommended to split it into multiple independent tasks");
     recommendations.push(
-      "在執行前進行詳盡的分析和規劃，明確定義各子任務的範圍和介面"
+      "Conduct detailed analysis and planning before execution to clearly define the scope and interface of each subtask"
     );
     recommendations.push(
-      "對任務進行風險評估，識別可能的阻礙因素並制定應對策略"
+      "Conduct risk assessment of tasks, identify possible barriers and develop response strategies"
     );
-    recommendations.push("建立具體的測試和驗證標準，確保每個子任務的輸出質量");
+    recommendations.push("Create specific testing and verification standards to ensure the output quality of each subtask");
     if (
       descriptionLength >= TaskComplexityThresholds.DESCRIPTION_LENGTH.VERY_HIGH
     ) {
       recommendations.push(
-        "任務描述非常長，建議整理關鍵點並建立結構化的執行清單"
+"The task description is very long, it is recommended to organize key points and establish a structured execution list"
       );
     }
     if (dependenciesCount >= TaskComplexityThresholds.DEPENDENCIES_COUNT.HIGH) {
       recommendations.push(
-        "依賴任務數量過多，建議重新評估任務邊界，確保任務切分合理"
+        "There are too many dependent tasks, and it is recommended to reevaluate the task boundaries to ensure that the task segmentation is reasonable"
       );
     }
   }
@@ -672,37 +670,37 @@ export async function assessTaskComplexity(
   };
 }
 
-// 清除所有任務
+// Clear all tasks
 export async function clearAllTasks(): Promise<{
   success: boolean;
   message: string;
   backupFile?: string;
 }> {
   try {
-    // 確保數據目錄存在
+    // Make sure the data directory exists
     await ensureDataDir();
 
-    // 讀取現有任務
+    // Read existing tasks
     const allTasks = await readTasks();
 
-    // 如果沒有任務，直接返回
+    // If there is no task, return directly
     if (allTasks.length === 0) {
-      return { success: true, message: "沒有任務需要清除" };
+      return { success: true, message: "No tasks to be cleared" };
     }
 
-    // 篩選出已完成的任務
+    // Filter out completed tasks
     const completedTasks = allTasks.filter(
       (task) => task.status === TaskStatus.COMPLETED
     );
 
-    // 創建備份文件名
+    // Create a backup file name
     const timestamp = new Date()
       .toISOString()
       .replace(/:/g, "-")
       .replace(/\..+/, "");
     const backupFileName = `tasks_memory_${timestamp}.json`;
 
-    // 確保 memory 目錄存在
+    // Make sure the memory directory exists
     const MEMORY_DIR = await getMemoryDir();
     try {
       await fs.access(MEMORY_DIR);
@@ -710,34 +708,33 @@ export async function clearAllTasks(): Promise<{
       await fs.mkdir(MEMORY_DIR, { recursive: true });
     }
 
-    // 創建 memory 目錄下的備份路徑
+    // Create a backup path under the memory directory
     const memoryFilePath = path.join(MEMORY_DIR, backupFileName);
 
-    // 同時寫入到 memory 目錄 (只包含已完成的任務)
+    // Write to the memory directory at the same time (contains only completed tasks)
     await fs.writeFile(
       memoryFilePath,
       JSON.stringify({ tasks: completedTasks }, null, 2)
     );
 
-    // 清空任務文件
+    // Clear task files
     await writeTasks([]);
-
-    return {
+return {
       success: true,
-      message: `已成功清除所有任務，共 ${allTasks.length} 個任務被刪除，已備份 ${completedTasks.length} 個已完成的任務至 memory 目錄`,
+      message: `All tasks have been successfully cleared, a total of ${allTasks.length} tasks have been deleted, and ${completedTasks.length} completed tasks have been backed up to the memory directory`,
       backupFile: backupFileName,
     };
   } catch (error) {
     return {
       success: false,
-      message: `清除任務時發生錯誤: ${
+      message: `Error occurred while clearing the task: ${
         error instanceof Error ? error.message : String(error)
       }`,
     };
   }
 }
 
-// 使用系統指令搜尋任務記憶
+// Use system instructions to search for task memory
 export async function searchTasksWithCommand(
   query: string,
   isId: boolean = false,
@@ -752,21 +749,21 @@ export async function searchTasksWithCommand(
     hasMore: boolean;
   };
 }> {
-  // 讀取當前任務檔案中的任務
+  // Read tasks in the current task file
   const currentTasks = await readTasks();
   let memoryTasks: Task[] = [];
 
-  // 搜尋記憶資料夾中的任務
+  // Search tasks in memory folder
   const MEMORY_DIR = await getMemoryDir();
 
   try {
-    // 確保記憶資料夾存在
+    // Make sure the memory folder exists
     await fs.access(MEMORY_DIR);
 
-    // 生成搜尋命令
+    // Generate search command
     const cmd = generateSearchCommand(query, isId, MEMORY_DIR);
 
-    // 如果有搜尋命令，執行它
+    // If there is a search command, execute it
     if (cmd) {
       try {
         const { stdout } = await execPromise(cmd, {
@@ -774,12 +771,12 @@ export async function searchTasksWithCommand(
         });
 
         if (stdout) {
-          // 解析搜尋結果，提取符合的檔案路徑
+          // Analyze search results and extract the corresponding archive path
           const matchedFiles = new Set<string>();
 
           stdout.split("\n").forEach((line) => {
             if (line.trim()) {
-              // 格式通常是: 文件路徑:匹配內容
+              // The format is usually: File path: Match content
               const filePath = line.split(":")[0];
               if (filePath) {
                 matchedFiles.add(filePath);
@@ -787,20 +784,20 @@ export async function searchTasksWithCommand(
             }
           });
 
-          // 限制讀取檔案數量
+          // Limit the number of files to be read
           const MAX_FILES_TO_READ = 10;
           const sortedFiles = Array.from(matchedFiles)
             .sort()
             .reverse()
             .slice(0, MAX_FILES_TO_READ);
 
-          // 只處理符合條件的檔案
+          // Only process files that meet the criteria
           for (const filePath of sortedFiles) {
             try {
               const data = await fs.readFile(filePath, "utf-8");
               const tasks = JSON.parse(data).tasks || [];
 
-              // 格式化日期字段
+              // Format date field
               const formattedTasks = tasks.map((task: any) => ({
                 ...task,
                 createdAt: task.createdAt
@@ -814,7 +811,7 @@ export async function searchTasksWithCommand(
                   : undefined,
               }));
 
-              // 進一步過濾任務確保符合條件
+              // Further filter tasks to ensure compliance
               const filteredTasks = isId
                 ? formattedTasks.filter((task: Task) => task.id === query)
                 : formattedTasks.filter((task: Task) => {
@@ -848,46 +845,46 @@ export async function searchTasksWithCommand(
     }
   } catch (error: unknown) {}
 
-  // 從當前任務中過濾符合條件的任務
+  // Filter tasks that meet the criteria from the current task
   const filteredCurrentTasks = filterCurrentTasks(currentTasks, query, isId);
 
-  // 合併結果並去重
+  // Merge the results and remove them
   const taskMap = new Map<string, Task>();
 
-  // 當前任務優先
+  // Current task priority
   filteredCurrentTasks.forEach((task) => {
     taskMap.set(task.id, task);
   });
 
-  // 加入記憶任務，避免重複
+  // Add memory tasks to avoid repetition
   memoryTasks.forEach((task) => {
     if (!taskMap.has(task.id)) {
       taskMap.set(task.id, task);
     }
   });
 
-  // 合併後的結果
+  // Merged results
   const allTasks = Array.from(taskMap.values());
 
-  // 排序 - 按照更新或完成時間降序排列
+  // Sort -sort in descending order by update or completion time
   allTasks.sort((a, b) => {
-    // 優先按完成時間排序
+    // Priority sorted by completion time
     if (a.completedAt && b.completedAt) {
       return b.completedAt.getTime() - a.completedAt.getTime();
     } else if (a.completedAt) {
-      return -1; // a完成了但b未完成，a排前面
+      return -1; // A is done but b is not done, a row is in front
     } else if (b.completedAt) {
-      return 1; // b完成了但a未完成，b排前面
+      return 1; // B is done but a is not completed, b is in front
     }
 
-    // 否則按更新時間排序
+    // Otherwise, sort by update time
     return b.updatedAt.getTime() - a.updatedAt.getTime();
   });
 
-  // 分頁處理
+  // Pagination processing
   const totalResults = allTasks.length;
   const totalPages = Math.ceil(totalResults / pageSize);
-  const safePage = Math.max(1, Math.min(page, totalPages || 1)); // 確保頁碼有效
+  const safePage = Math.max(1, Math.min(page, totalPages || 1)); // Ensure page number is valid
   const startIndex = (safePage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, totalResults);
   const paginatedTasks = allTasks.slice(startIndex, endIndex);
@@ -903,40 +900,40 @@ export async function searchTasksWithCommand(
   };
 }
 
-// 根據平台生成適當的搜尋命令
+// Generate appropriate search commands based on the platform
 function generateSearchCommand(
   query: string,
   isId: boolean,
   memoryDir: string
 ): string {
-  // 安全地轉義用戶輸入
+  // Safely escape user input
   const safeQuery = escapeShellArg(query);
   const keywords = safeQuery.split(/\s+/).filter((k) => k.length > 0);
 
-  // 檢測操作系統類型
+  // Detect operating system type
   const isWindows = process.platform === "win32";
 
   if (isWindows) {
-    // Windows環境，使用findstr命令
+    // Windows environment, use the findstr command
     if (isId) {
-      // ID搜尋
+      // Id search
       return `findstr /s /i /c:"${safeQuery}" "${memoryDir}\\*.json"`;
     } else if (keywords.length === 1) {
-      // 單一關鍵字
+      // Single keyword
       return `findstr /s /i /c:"${safeQuery}" "${memoryDir}\\*.json"`;
     } else {
-      // 多關鍵字搜尋 - Windows中使用PowerShell
+      // Multi-keyword search -Using PowerShell in Windows
       const keywordPatterns = keywords.map((k) => `'${k}'`).join(" -and ");
       return `powershell -Command "Get-ChildItem -Path '${memoryDir}' -Filter *.json -Recurse | Select-String -Pattern ${keywordPatterns} | ForEach-Object { $_.Path }"`;
     }
   } else {
-    // Unix/Linux/MacOS環境，使用grep命令
+    // Unix/linux/mac os environment, use grep command
     if (isId) {
       return `grep -r --include="*.json" "${safeQuery}" "${memoryDir}"`;
     } else if (keywords.length === 1) {
       return `grep -r --include="*.json" "${safeQuery}" "${memoryDir}"`;
     } else {
-      // 多關鍵字用管道連接多個grep命令
+      // Multiple keywords use pipes to connect multiple grep commands
       const firstKeyword = escapeShellArg(keywords[0]);
       const otherKeywords = keywords.slice(1).map((k) => escapeShellArg(k));
 
@@ -950,18 +947,18 @@ function generateSearchCommand(
 }
 
 /**
- * 安全地轉義shell參數，防止命令注入
+ * Safely escape shell parameters to prevent command injection
  */
 function escapeShellArg(arg: string): string {
   if (!arg) return "";
 
-  // 移除所有控制字符和特殊字符
+  // Remove all control characters and special characters
   return arg
-    .replace(/[\x00-\x1F\x7F]/g, "") // 控制字符
-    .replace(/[&;`$"'<>|]/g, ""); // Shell 特殊字符
+    .replace(/[\x00-\x1F\x7F]/g, "") // Control characters
+    .replace(/[&;`$"'<>|]/g, ""); // Shell special characters
 }
 
-// 過濾當前任務列表
+// Filter the current task list
 function filterCurrentTasks(
   tasks: Task[],
   query: string,

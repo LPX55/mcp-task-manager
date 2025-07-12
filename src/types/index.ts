@@ -1,94 +1,94 @@
-// 任務狀態枚舉：定義任務在工作流程中的當前階段
+// Task status enumeration: defines the current stage of a task in the workflow
 export enum TaskStatus {
-  PENDING = "pending", // 已創建但尚未開始執行的任務
-  IN_PROGRESS = "in_progress", // 當前正在執行的任務
-  COMPLETED = "completed", // 已成功完成並通過驗證的任務
-  BLOCKED = "blocked", // 由於依賴關係而暫時無法執行的任務
+  PENDING = "pending", // A task that has been created but has not started yet
+  IN_PROGRESS = "in_progress", // The task currently being executed
+  COMPLETED = "completed", // A task that has been successfully completed and verified
+  BLOCKED = "blocked", // Tasks that cannot be executed temporarily due to dependencies
 }
 
-// 任務依賴關係：定義任務之間的前置條件關係
+// Task dependency: defines the precondition relationship between tasks
 export interface TaskDependency {
-  taskId: string; // 前置任務的唯一標識符，當前任務執行前必須完成此依賴任務
+  taskId: string; // A unique identifier for the predecessor task. This dependent task must be completed before the current task is executed.
 }
 
-// 相關文件類型：定義文件與任務的關係類型
+// Related file types: Define the relationship type between file and task
 export enum RelatedFileType {
-  TO_MODIFY = "TO_MODIFY", // 需要在任務中修改的文件
-  REFERENCE = "REFERENCE", // 任務的參考資料或相關文檔
-  CREATE = "CREATE", // 需要在任務中建立的文件
-  DEPENDENCY = "DEPENDENCY", // 任務依賴的組件或庫文件
-  OTHER = "OTHER", // 其他類型的相關文件
+  TO_MODIFY = "TO_MODIFY", // Files that need to be modified in the task
+  REFERENCE = "REFERENCE", // References or related documents for tasks
+  CREATE = "CREATE", // Files that need to be created in the task
+  DEPENDENCY = "DEPENDENCY", // Task-dependent components or library files
+  OTHER = "OTHER", // Other types of related files
 }
 
-// 相關文件：定義任務相關的文件信息
+// Related files: Define task-related file information
 export interface RelatedFile {
-  path: string; // 文件路徑，可以是相對於項目根目錄的路徑或絕對路徑
-  type: RelatedFileType; // 文件與任務的關係類型
-  description?: string; // 文件的補充描述，說明其與任務的具體關係或用途
-  lineStart?: number; // 相關代碼區塊的起始行（選填）
-  lineEnd?: number; // 相關代碼區塊的結束行（選填）
+  path: string; // The file path can be a path relative to the project root directory or an absolute path
+  type: RelatedFileType; // File and task relationship type
+  description?: string; // Supplementary description of the document, explaining its specific relationship or purpose with the task
+  lineStart?: number; // The starting line of the relevant code block (optional)
+  lineEnd?: number; // End line of relevant code blocks (optional)
 }
 
-// 任務介面：定義任務的完整數據結構
+// Task interface: Define the complete data structure of a task
 export interface Task {
-  id: string; // 任務的唯一標識符
-  name: string; // 簡潔明確的任務名稱
-  description: string; // 詳細的任務描述，包含實施要點和驗收標準
-  notes?: string; // 補充說明、特殊處理要求或實施建議（選填）
-  status: TaskStatus; // 任務當前的執行狀態
-  dependencies: TaskDependency[]; // 任務的前置依賴關係列表
-  createdAt: Date; // 任務創建的時間戳
-  updatedAt: Date; // 任務最後更新的時間戳
-  completedAt?: Date; // 任務完成的時間戳（僅適用於已完成的任務）
-  summary?: string; // 任務完成摘要，簡潔描述實施結果和重要決策（僅適用於已完成的任務）
-  relatedFiles?: RelatedFile[]; // 與任務相關的文件列表（選填）
+  id: string; // Unique identifier for a task
+  name: string; // Concise and clear task name
+  description: string; // Detailed task description, including implementation points and acceptance standards
+  notes?: string; // Supplementary instructions, special handling requirements or implementation suggestions (optional)
+  status: TaskStatus; // The current execution status of the task
+  dependencies: TaskDependency[]; // List of predependencies for tasks
+  createdAt: Date; // Timestamp created by task
+  updatedAt: Date; // The last updated time stamp of the task
+  completedAt?: Date; // Timestamp for task completion (only for completed tasks)
+  summary?: string; // Task completion summary, concise description of implementation results and important decisions (only applicable to completed tasks)
+  relatedFiles?: RelatedFile[]; // List of files related to tasks (optional)
 
-  // 新增欄位：保存完整的技術分析結果
-  analysisResult?: string; // 來自 analyze_task 和 reflect_task 階段的完整分析結果
+  // Added column: Save the complete technical analysis results
+  analysisResult?: string; // Complete analysis results from the analyze_task and reflect_task stages
 
-  // 新增欄位：保存具體的實現指南
-  implementationGuide?: string; // 具體的實現方法、步驟和建議
+  // Added columns: Save specific implementation guide
+  implementationGuide?: string; // Specific implementation methods, steps and suggestions
 
-  // 新增欄位：保存驗證標準和檢驗方法
-  verificationCriteria?: string; // 明確的驗證標準、測試要點和驗收條件
+  // Added columns: Save verification standards and inspection methods
+  verificationCriteria?: string; // Clear verification standards, testing points and acceptance conditions
 }
 
-// 任務複雜度級別：定義任務的複雜程度分類
+// Task complexity level: defines the complexity classification of tasks
 export enum TaskComplexityLevel {
-  LOW = "低複雜度", // 簡單且直接的任務，通常不需要特殊處理
-  MEDIUM = "中等複雜度", // 具有一定複雜性但仍可管理的任務
-  HIGH = "高複雜度", // 複雜且耗時的任務，需要特別關注
-  VERY_HIGH = "極高複雜度", // 極其複雜的任務，建議拆分處理
+  LOW = "Low complexity", // Simple and direct tasks that usually do not require special processing
+  MEDIUM = "Medium complexity", // Tasks that are complex but still manageable
+  HIGH = "High complexity", // Complex and time-consuming tasks that require special attention
+  VERY_HIGH = "Extremely complex", // Extremely complex tasks, it is recommended to split and handle
 }
 
-// 任務複雜度閾值：定義任務複雜度評估的參考標準
+// Task complexity threshold: a reference criterion for defining task complexity evaluation
 export const TaskComplexityThresholds = {
   DESCRIPTION_LENGTH: {
-    MEDIUM: 500, // 超過此字數判定為中等複雜度
-    HIGH: 1000, // 超過此字數判定為高複雜度
-    VERY_HIGH: 2000, // 超過此字數判定為極高複雜度
+    MEDIUM: 500, // Exceeding this number of words is considered to be of medium complexity
+    HIGH: 1000, // Exceeding this number of words is determined to be of high complexity
+    VERY_HIGH: 2000, // Exceeding this number of words is considered to be extremely complex
   },
   DEPENDENCIES_COUNT: {
-    MEDIUM: 2, // 超過此依賴數量判定為中等複雜度
-    HIGH: 5, // 超過此依賴數量判定為高複雜度
-    VERY_HIGH: 10, // 超過此依賴數量判定為極高複雜度
+    MEDIUM: 2, // Exceeding this dependency number is determined to be of medium complexity
+    HIGH: 5, // Exceeding this dependency number is determined to be high complexity
+    VERY_HIGH: 10, // Exceeding this dependency number is determined to be extremely complex
   },
   NOTES_LENGTH: {
-    MEDIUM: 200, // 超過此字數判定為中等複雜度
-    HIGH: 500, // 超過此字數判定為高複雜度
-    VERY_HIGH: 1000, // 超過此字數判定為極高複雜度
+    MEDIUM: 200, // Exceeding this number of words is considered to be of medium complexity
+    HIGH: 500, // Exceeding this number of words is determined to be of high complexity
+    VERY_HIGH: 1000, // Exceeding this number of words is considered to be extremely complex
   },
 };
 
-// 任務複雜度評估結果：記錄任務複雜度分析的詳細結果
+// Task complexity evaluation results: Record detailed results of task complexity analysis
 export interface TaskComplexityAssessment {
-  level: TaskComplexityLevel; // 整體複雜度級別
+  level: TaskComplexityLevel; // Overall complexity level
   metrics: {
-    // 各項評估指標的詳細數據
-    descriptionLength: number; // 描述長度
-    dependenciesCount: number; // 依賴數量
-    notesLength: number; // 注記長度
-    hasNotes: boolean; // 是否有注記
+    // Detailed data on various evaluation indicators
+    descriptionLength: number; // Description length
+    dependenciesCount: number; // Number of dependencies
+    notesLength: number; // Note length
+    hasNotes: boolean; // Is there any notes
   };
-  recommendations: string[]; // 處理建議列表
+  recommendations: string[]; // Processing suggestions list
 }

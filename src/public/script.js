@@ -1,19 +1,19 @@
-// 全局變量
+// Global variables
 let tasks = [];
 let selectedTaskId = null;
 let searchTerm = "";
 let sortOption = "date-asc";
-let globalAnalysisResult = null; // 新增：儲存全局分析結果
+let globalAnalysisResult = null; // New: Save global analysis results
 let svg, g, simulation;
-let width, height; // << 新增：將寬高定義為全局變量
-let isGraphInitialized = false; // << 新增：追蹤圖表是否已初始化
-let zoom; // << 新增：保存縮放行為對象
+let width, height; // << New: Define width and height as global variables
+let isGraphInitialized = false; // << New: Tracking whether the chart has been initialized
+let zoom; // << Added: Save the zoom behavior object
 
-// 新增：i18n 全局變量
-let currentLang = "en"; // 預設語言
-let translations = {}; // 儲存加載的翻譯
+// New: i18n global variable
+let currentLang = "en"; // Preset language
+let translations = {}; // Store loaded translations
 
-// DOM元素
+// Dom Elements
 const taskListElement = document.getElementById("task-list");
 const taskDetailsContent = document.getElementById("task-details-content");
 const statusFilter = document.getElementById("status-filter");
@@ -26,30 +26,30 @@ const progressLabels = document.getElementById("progress-labels");
 const dependencyGraphElement = document.getElementById("dependency-graph");
 const globalAnalysisResultElement = document.getElementById(
   "global-analysis-result"
-); // 假設 HTML 中有這個元素
-const langSwitcher = document.getElementById("lang-switcher"); // << 新增：獲取切換器元素
-const resetViewBtn = document.getElementById("reset-view-btn"); // << 新增：獲取重置按鈕元素
+); // Assume that there is this element in HTML
+const langSwitcher = document.getElementById("lang-switcher"); // << Added: Get the switcher element
+const resetViewBtn = document.getElementById("reset-view-btn"); // << New: Get reset button element
 
-// 初始化
+// initialization
 document.addEventListener("DOMContentLoaded", () => {
-  // fetchTasks(); // 將由 initI18n() 觸發
-  initI18n(); // << 新增：初始化 i18n
+  // fetchTasks(); //Will be triggered by initI18n()
+  initI18n(); // << Added: Initialize i18n
   updateCurrentTime();
   setInterval(updateCurrentTime, 1000);
-  updateDimensions(); // << 新增：初始化時更新尺寸
+  updateDimensions(); // << New: Updated size during initialization
 
-  // 事件監聽器
-  // statusFilter.addEventListener("change", renderTasks); // 將由 changeLanguage 觸發或在 applyTranslations 後觸發
+  // Event Listener
+  // statusFilter.addEventListener("change", renderTasks); //Will be triggered by changeLanguage or after applyTranslations
   if (statusFilter) {
     statusFilter.addEventListener("change", renderTasks);
   }
 
-  // 新增：重置視圖按鈕事件監聽
+  // New: Reset view button event listening
   if (resetViewBtn) {
     resetViewBtn.addEventListener("click", resetView);
   }
 
-  // 新增：搜索和排序事件監聽
+  // New: Search and sort event listening
   const searchInput = document.getElementById("search-input");
   const sortOptions = document.getElementById("sort-options");
 
@@ -67,17 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 新增：設置 SSE 連接
+  // New: Set up SSE connection
   setupSSE();
 
-  // 新增：語言切換器事件監聽
+  // New: Language switch event monitoring
   if (langSwitcher) {
     langSwitcher.addEventListener("change", (e) =>
       changeLanguage(e.target.value)
     );
   }
 
-  // 新增：視窗大小改變時更新尺寸
+  // New: Updated size when the window size changes
   window.addEventListener("resize", () => {
     updateDimensions();
     if (svg && simulation) {
@@ -88,29 +88,29 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// 新增：i18n 核心函數
-// 1. 語言檢測 (URL 參數 > navigator.language > 'en')
+// New: i18n core function
+// 1. Language Detection (URL Parameters > navigator.language > 'en')
 function detectLanguage() {
-  // 1. 優先從 URL 參數讀取
+  // 1. Preferential reading from URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const urlLang = urlParams.get("lang");
   if (urlLang && ["en", "zh-TW"].includes(urlLang)) {
     return urlLang;
   }
 
-  // 2. 檢查瀏覽器語言（移除 localStorage 檢查）
+  // 2. Check the browser language (remove localStorage check)
   const browserLang = navigator.language || navigator.userLanguage;
   if (browserLang) {
     if (browserLang.toLowerCase().startsWith("zh-tw")) return "zh-TW";
-    if (browserLang.toLowerCase().startsWith("zh")) return "zh-TW"; // 簡體也先 fallback 到繁體
+    if (browserLang.toLowerCase().startsWith("zh")) return "zh-TW"; // Simplified Chinese fallback to Traditional Chinese
     if (browserLang.toLowerCase().startsWith("en")) return "en";
   }
 
-  // 3. 預設值
+  // 3. Preset value
   return "en";
 }
 
-// 2. 異步加載翻譯文件
+// 2. Load the translation file asynchronously
 async function loadTranslations(lang) {
   try {
     const response = await fetch(`/locales/${lang}.json`);
@@ -134,10 +134,10 @@ async function loadTranslations(lang) {
   }
 }
 
-// 3. 翻譯函數
+// 3. Translation functions
 function translate(key, replacements = {}) {
   let translated = translations[key] || key; // Fallback to key itself
-  // 簡單的佔位符替換（例如 {message}）
+  // Simple placeholder replacement (e.g. {message})
   for (const placeholder in replacements) {
     translated = translated.replace(
       `{${placeholder}}`,
@@ -147,36 +147,36 @@ function translate(key, replacements = {}) {
   return translated;
 }
 
-// 4. 應用翻譯到 DOM (處理 textContent, placeholder, title)
+// 4. Application translation to DOM (process textContent, placeholder, title)
 function applyTranslations() {
   console.log("Applying translations for:", currentLang);
   document.querySelectorAll("[data-i18n-key]").forEach((el) => {
     const key = el.dataset.i18nKey;
     const translatedText = translate(key);
 
-    // 優先處理特定屬性
+    // Prioritize specific attributes
     if (el.hasAttribute("placeholder")) {
       el.placeholder = translatedText;
     } else if (el.hasAttribute("title")) {
       el.title = translatedText;
     } else if (el.tagName === "OPTION") {
       el.textContent = translatedText;
-      // 如果需要，也可以翻譯 value，但通常不需要
+      // Translate value if needed, but usually not
     } else {
-      // 對於大多數元素，設置 textContent
+      // For most elements, set textContent
       el.textContent = translatedText;
     }
   });
-  // 手動更新沒有 data-key 的元素（如果有的話）
-  // 例如，如果 footer 時間格式需要本地化，可以在這裡處理
-  // updateCurrentTime(); // 確保時間格式也可能更新（如果需要）
+  // Manually update elements without data-key (if any)
+  // For example, if the footer time format needs to be localized, it can be handled here
+  // updateCurrentTime(); //Make sure the time format may also be updated (if required)
 }
 
-// 5. 初始化 i18n
+// 5. Initialize i18n
 async function initI18n() {
   currentLang = detectLanguage();
   console.log(`Initializing i18n with language: ${currentLang}`);
-  // << 新增：設置切換器的初始值 >>
+  // << Added: Set the initial value of the switch >>
   if (langSwitcher) {
     langSwitcher.value = currentLang;
   }
@@ -185,7 +185,7 @@ async function initI18n() {
   await fetchTasks();
 }
 
-// 新增：語言切換函數
+// New: Language Switching Function
 function changeLanguage(lang) {
   if (!lang || !["en", "zh-TW"].includes(lang)) {
     console.warn(`Invalid language selected: ${lang}. Defaulting to English.`);
@@ -198,14 +198,14 @@ function changeLanguage(lang) {
       console.log("Translations reloaded, applying...");
       applyTranslations();
       console.log("Re-rendering components...");
-      // 重新渲染需要翻譯的組件
+      // Re-render the components that need translation
       renderTasks();
       if (selectedTaskId) {
         const task = tasks.find((t) => t.id === selectedTaskId);
         if (task) {
-          selectTask(selectedTaskId); // 確保傳遞 ID，讓 selectTask 重新查找並渲染
+          selectTask(selectedTaskId); // Make sure to pass the ID and let selectTask re-find and render
         } else {
-          // 如果選中的任務已不存在，清除詳情
+          // If the selected task does not exist, clear details
           taskDetailsContent.innerHTML = `<p class="placeholder">${translate(
             "task_details_placeholder"
           )}</p>`;
@@ -213,30 +213,30 @@ function changeLanguage(lang) {
           highlightNode(null);
         }
       } else {
-        // 如果沒有任務被選中，確保詳情面板顯示 placeholder
+        // If no task is selected, make sure the details panel displays placeholder
         taskDetailsContent.innerHTML = `<p class="placeholder">${translate(
           "task_details_placeholder"
         )}</p>`;
       }
-      renderDependencyGraph(); // 重新渲染圖表（可能包含 placeholder）
-      updateProgressIndicator(); // 重新渲染進度條（包含標籤）
-      renderGlobalAnalysisResult(); // 重新渲染全局分析（標題）
-      // 確保下拉菜單的值與當前語言一致
+      renderDependencyGraph(); // Rerender the chart (may contain placeholder)
+      updateProgressIndicator(); // Re-render the progress bar (including labels)
+      renderGlobalAnalysisResult(); // Re-render the global analysis (title)
+      // Make sure the drop-down menu values are consistent with the current language
       if (langSwitcher) langSwitcher.value = currentLang;
       console.log("Language change complete.");
     })
     .catch((error) => {
       console.error("Error changing language:", error);
-      // 可以添加用戶反饋，例如顯示錯誤消息
+      // You can add user feedback, such as displaying error messages
       showTemporaryError("Failed to change language. Please try again."); // Need translation key
     });
 }
-// --- i18n 核心函數結束 ---
+// ---i18n core function ends ---
 
-// 獲取任務數據
+// Get task data
 async function fetchTasks() {
   try {
-    // 初始載入時顯示 loading (現在使用翻譯)
+    // Show loading during initial loading (now using translation)
     if (tasks.length === 0) {
       taskListElement.innerHTML = `<div class="loading">${translate(
         "task_list_loading"
@@ -252,46 +252,46 @@ async function fetchTasks() {
     const data = await response.json();
     const newTasks = data.tasks || [];
 
-    // 提取全局分析結果 (找第一個非空的)
+    // Extract global analysis results (find the first non-empty one)
     let foundAnalysisResult = null;
     for (const task of newTasks) {
       if (task.analysisResult) {
         foundAnalysisResult = task.analysisResult;
-        break; // 找到一個就夠了
+        break; // Finding one is enough
       }
     }
-    // 只有當找到的結果與當前儲存的不同時才更新
+    // Update only if the result found is different from the current storage
     if (foundAnalysisResult !== globalAnalysisResult) {
       globalAnalysisResult = foundAnalysisResult;
-      renderGlobalAnalysisResult(); // 更新顯示
+      renderGlobalAnalysisResult(); // Update display
     }
 
-    // --- 智慧更新邏輯 (初步 - 仍需改進以避免閃爍) ---
-    // 簡單地比較任務數量或標識符來決定是否重新渲染
-    // 理想情況下應比較每個任務的內容並進行 DOM 更新
+    // ---Smart update logic (preliminary -still need to be improved to avoid flickering) ---
+    // Simply compare task counts or identifiers to decide whether to re-render
+    // Ideally, the content of each task should be compared and DOM updates
     const tasksChanged = didTasksChange(tasks, newTasks);
 
     if (tasksChanged) {
-      tasks = newTasks; // 更新全局任務列表
+      tasks = newTasks; // Update the global task list
       console.log("Tasks updated via fetch, re-rendering...");
       renderTasks();
       updateProgressIndicator();
-      renderDependencyGraph(); // 更新圖表
+      renderDependencyGraph(); // Update the chart
     } else {
       console.log(
         "No significant task changes detected, skipping full re-render."
       );
-      // 如果不需要重新渲染列表，可能只需要更新進度條
+      // If you don't need to re-render the list, you may just need to update the progress bar
       updateProgressIndicator();
-      // 考慮是否需要更新圖表（如果狀態可能改變）
-      // renderDependencyGraph(); // 暫時註釋掉，除非狀態變化很關鍵
+      // Consider whether the chart needs to be updated (if the state may change)
+      // renderDependencyGraph(); //Comment out temporarily unless the state changes are critical
     }
 
-    // *** 移除 setTimeout 輪詢 ***
+    // *** Remove setTimeout Polling ***
     // setTimeout(fetchTasks, 30000);
   } catch (error) {
     console.error("Error fetching tasks:", error);
-    // 避免覆蓋現有列表，除非是初始載入失敗
+    // Avoid overwriting existing lists unless the initial load fails
     if (tasks.length === 0) {
       taskListElement.innerHTML = `<div class="error">${translate(
         "error_loading_tasks",
@@ -310,28 +310,28 @@ async function fetchTasks() {
   }
 }
 
-// 新增：設置 Server-Sent Events 連接
+// New: Set up Server-Sent Events connection
 function setupSSE() {
   console.log("Setting up SSE connection to /api/tasks/stream");
   const evtSource = new EventSource("/api/tasks/stream");
 
   evtSource.onmessage = function (event) {
     console.log("SSE message received:", event.data);
-    // 可以根據 event.data 內容做更複雜的判斷，目前只要收到消息就更新
+    // You can make more complex judgments based on the event.data content, and update them as long as you receive a message.
   };
 
   evtSource.addEventListener("update", function (event) {
     console.log("SSE 'update' event received:", event.data);
-    // 收到更新事件，重新獲取任務列表
+    // Receive update event, re-get task list
     fetchTasks();
   });
 
   evtSource.onerror = function (err) {
     console.error("EventSource failed:", err);
-    // 可以實現重連邏輯
-    evtSource.close(); // 關閉錯誤的連接
-    // 延遲一段時間後嘗試重新連接
-    setTimeout(setupSSE, 5000); // 5秒後重試
+    // Reconnect logic can be realized
+    evtSource.close(); // Close the wrong connection
+    // Try to reconnect after a delay of a while
+    setTimeout(setupSSE, 5000); // Try again in 5 seconds
   };
 
   evtSource.onopen = function () {
@@ -339,7 +339,7 @@ function setupSSE() {
   };
 }
 
-// 新增：比較任務列表是否有變化的輔助函數 (最全面版)
+// New: Helper function that compares whether there is any change in the task list (most comprehensive version)
 function didTasksChange(oldTasks, newTasks) {
   if (!oldTasks || !newTasks) return true; // Handle initial load or error states
 
@@ -398,7 +398,7 @@ function didTasksChange(oldTasks, newTasks) {
       return true;
     }
 
-    // Compare relatedFiles (array of objects) - simple length check first
+    // Compare relatedFiles (array of objects) -simple length check first
     if (!compareRelatedFiles(oldTask.relatedFiles, newTask.relatedFiles)) {
       console.log(`Task ${newTask.id} changed field: relatedFiles`);
       return true;
@@ -459,20 +459,20 @@ function compareRelatedFiles(files1, files2) {
   return true;
 }
 
-// 新增：顯示臨時錯誤訊息的函數
+// New: Function that displays temporary error message
 function showTemporaryError(message) {
   const errorElement = document.createElement("div");
   errorElement.className = "temporary-error";
-  errorElement.textContent = message; // 保持消息本身
+  errorElement.textContent = message; // Keep the message itself
   document.body.appendChild(errorElement);
   setTimeout(() => {
     errorElement.remove();
-  }, 3000); // 顯示 3 秒
+  }, 3000); // Displayed for 3 seconds
 }
 
-// 渲染任務列表 - *** 需要進一步優化以實現智慧更新 ***
+// Rendering task list -***Further optimization is required to achieve smart updates ***
 function renderTasks() {
-  console.log("Rendering tasks..."); // 添加日誌
+  console.log("Rendering tasks..."); // Add log
   const filterValue = statusFilter.value;
 
   let filteredTasks = tasks;
@@ -490,7 +490,7 @@ function renderTasks() {
     );
   }
 
-  // 儲存篩選後的任務 ID 集合，用於圖形渲染
+  // Stores a collection of filtered task IDs for graphics rendering
   const filteredTaskIds = new Set(filteredTasks.map(task => task.id));
 
   filteredTasks.sort((a, b) => {
@@ -510,11 +510,11 @@ function renderTasks() {
     }
   });
 
-  // 更新圖形的顯示狀態
+  // Update the display status of the graphics
   updateGraphVisibility(filteredTaskIds);
 
-  // --- 簡單粗暴的替換 (會導致閃爍) ---
-  // TODO: 實現 DOM Diffing 或更智慧的更新策略
+  // ---Simple and rough replacement (which will cause flicker) ---
+  // TODO: Implement DOM Diffing or smarter update strategies
   if (filteredTasks.length === 0) {
     taskListElement.innerHTML = `<div class="placeholder">${translate(
       "task_list_empty"
@@ -539,9 +539,9 @@ function renderTasks() {
       )
       .join("");
   }
-  // --- 結束簡單粗暴的替換 ---
+  // ---End a simple and crude replacement ---
 
-  // 重新應用選中狀態
+  // Reapply the selected status
   if (selectedTaskId) {
     const taskExists = tasks.some((t) => t.id === selectedTaskId);
     if (taskExists) {
@@ -552,7 +552,7 @@ function renderTasks() {
         selectedElement.classList.add("selected");
       }
     } else {
-      // 如果選中的任務在新的列表中不存在了，清除選擇
+      // If the selected task does not exist in the new list, clear the selection
       console.log(
         `Selected task ${selectedTaskId} no longer exists, clearing selection.`
       );
@@ -560,22 +560,22 @@ function renderTasks() {
       taskDetailsContent.innerHTML = `<p class="placeholder">${translate(
         "task_details_placeholder"
       )}</p>`;
-      highlightNode(null); // 清除圖表高亮
+      highlightNode(null); // Clear chart highlighting
     }
   }
 }
 
-// 新增：更新图形可见性的函数
+// New: Functions that update graph visibility
 function updateGraphVisibility(filteredTaskIds) {
   if (!g) return;
 
-  // 更新节点的样式
+  // Update the style of the node
   g.select(".nodes")
     .selectAll("g.node-item")
     .style("opacity", d => filteredTaskIds.has(d.id) ? 1 : 0.2)
     .style("filter", d => filteredTaskIds.has(d.id) ? "none" : "grayscale(80%)");
 
-  // 更新连接的样式
+  // Update the style of the connection
   g.select(".links")
     .selectAll("line.link")
     .style("opacity", d => {
@@ -589,7 +589,7 @@ function updateGraphVisibility(filteredTaskIds) {
       return (sourceVisible && targetVisible) ? "#999" : "#ccc";
     });
 
-  // 更新缩略图中的节点和连接样式
+  // Update nodes and connection styles in thumbnails
   const minimapContent = svg.select(".minimap-content");
   
   minimapContent.selectAll(".minimap-node")
@@ -609,33 +609,33 @@ function updateGraphVisibility(filteredTaskIds) {
     });
 }
 
-// 新增：将节点移动到视图中心的函数
+// New: Function that moves nodes to view center
 function centerNode(nodeId) {
   if (!svg || !g || !simulation) return;
 
   const node = simulation.nodes().find(n => n.id === nodeId);
   if (!node) return;
 
-  // 获取当前视图的变换状态
+  // Get the transform status of the current view
   const transform = d3.zoomTransform(svg.node());
   
-  // 计算需要的变换以将节点居中
-  const scale = transform.k; // 保持当前缩放级别
+  // Compute the required transformation to center the node
+  const scale = transform.k; // Maintain the current zoom level
   const x = width / 2 - node.x * scale;
   const y = height / 2 - node.y * scale;
 
-  // 使用过渡动画平滑地移动到新位置
+  // Use transition animation to move smoothly to a new position
   svg.transition()
-    .duration(750) // 750ms的过渡时间
+    .duration(750) // 750ms transition time
     .call(zoom.transform, d3.zoomIdentity
       .translate(x, y)
       .scale(scale)
     );
 }
 
-// 修改选择任务的函数
+// Modify the function that selects a task
 function selectTask(taskId) {
-  // 清除旧的选中状态和高亮
+  // Clear old selected status and highlight
   if (selectedTaskId) {
     const previousElement = document.querySelector(
       `.task-item[data-id="${selectedTaskId}"]`
@@ -645,19 +645,19 @@ function selectTask(taskId) {
     }
   }
 
-  // 如果再次点击同一个任务，则取消选中
+  // If you click on the same task again, uncheck
   if (selectedTaskId === taskId) {
     selectedTaskId = null;
     taskDetailsContent.innerHTML = `<p class="placeholder">${translate(
       "task_details_placeholder"
     )}</p>`;
-    highlightNode(null); // 取消高亮
+    highlightNode(null); // Cancel highlight
     return;
   }
 
   selectedTaskId = taskId;
 
-  // 添加新的选中状态
+  // Add a new selected status
   const selectedElement = document.querySelector(
     `.task-item[data-id="${taskId}"]`
   );
@@ -665,7 +665,7 @@ function selectTask(taskId) {
     selectedElement.classList.add("selected");
   }
 
-  // 获取并显示任务详情
+  // Get and display task details
   const task = tasks.find((t) => t.id === taskId);
 
   if (!task) {
@@ -675,8 +675,8 @@ function selectTask(taskId) {
     return;
   }
 
-  // --- 安全地填充任務詳情 ---
-  // 1. 創建基本骨架 (使用 innerHTML，但將動態內容替換為帶 ID 的空元素)
+  // ---Fill in task details safely ---
+  // 1. Create the basic skeleton (using innerHTML, but replacing dynamic content with empty elements with ID)
   taskDetailsContent.innerHTML = `
     <div class="task-details-header">
       <h3 id="detail-name"></h3>
@@ -728,7 +728,7 @@ function selectTask(taskId) {
     </div>
   `;
 
-  // 2. 獲取對應元素並使用 textContent 安全地填充內容
+  // 2. Get the corresponding element and use textContent to fill content safely
   const detailName = document.getElementById("detail-name");
   const detailStatus = document.getElementById("detail-status");
   const detailDescription = document.getElementById("detail-description");
@@ -738,7 +738,7 @@ function selectTask(taskId) {
   const detailVerificationCriteria = document.getElementById(
     "detail-verification-criteria"
   );
-  // 新增：獲取 Summary 相關元素
+  // Added: Get Summary-related elements
   const detailSummarySection = document.getElementById(
     "detail-summary-section"
   );
@@ -767,18 +767,18 @@ function selectTask(taskId) {
       task.verificationCriteria ||
       translate("task_detail_no_verification_criteria");
 
-  // 新增：填充 Summary (如果存在且已完成)
+  // Added: Fill in Summary (if present and completed)
   if (task.summary && detailSummarySection && detailSummary) {
     detailSummary.textContent = task.summary;
-    detailSummarySection.style.display = "block"; // 顯示區塊
+    detailSummarySection.style.display = "block"; // Display blocks
   } else if (detailSummarySection) {
-    detailSummarySection.style.display = "none"; // 隱藏區塊
+    detailSummarySection.style.display = "none"; // Hide blocks
   }
 
   if (detailNotes)
     detailNotes.textContent = task.notes || translate("task_detail_no_notes");
 
-  // 3. 動態生成依賴項和相關文件 (這些可以包含安全的 HTML 結構如 span)
+  // 3. Dynamically generate dependencies and related files (these can contain secure HTML structures such as spans)
   if (detailDependencies) {
     const dependenciesHtml =
       task.dependencies && task.dependencies.length
@@ -829,56 +829,56 @@ function selectTask(taskId) {
     detailRelatedFiles.innerHTML = relatedFilesHtml;
   }
 
-  // --- 原來的 innerHTML 賦值已移除 ---
+  // ---The original innerHTML assignment has been removed ---
 
-  // 高亮节点并将其移动到中心
+  // Highlight the node and move it to the center
   highlightNode(taskId);
   centerNode(taskId);
 }
 
-// 新增：重置視圖功能
+// New: Reset view function
 function resetView() {
   if (!svg || !simulation) return;
 
-  // 添加重置動畫效果
+  // Add reset animation effect
   resetViewBtn.classList.add("resetting");
 
-  // 計算視圖中心
+  // Computing View Center
   const centerX = width / 2;
   const centerY = height / 2;
 
-  // 重置縮放和平移（使用 transform 過渡）
+  // Reset zoom and pan (using transform)
   svg.transition()
     .duration(750)
     .call(zoom.transform, d3.zoomIdentity);
 
-  // 重置所有節點位置到中心附近
+  // Reset all node locations near the center
   simulation.nodes().forEach(node => {
-    node.x = centerX + (Math.random() - 0.5) * 50; // 在中心點附近隨機分佈
+    node.x = centerX + (Math.random() - 0.5) * 50; // Random distribution near the center point
     node.y = centerY + (Math.random() - 0.5) * 50;
-    node.fx = null; // 清除固定位置
+    node.fx = null; // Clear fixed position
     node.fy = null;
   });
 
-  // 重置力導向模擬
+  // Reset force-oriented simulation
   simulation
     .force("center", d3.forceCenter(centerX, centerY))
-    .alpha(1) // 完全重啟模擬
+    .alpha(1) // Completely restart the simulation
     .restart();
 
-  // 750ms 後移除動畫類
+  // Remove animation class after 750ms
   setTimeout(() => {
     resetViewBtn.classList.remove("resetting");
   }, 750);
 }
 
-// 新增：初始化縮放行為
+// New: Initialize scaling behavior
 function initZoom() {
   zoom = d3.zoom()
-    .scaleExtent([0.1, 4]) // 設置縮放範圍
+    .scaleExtent([0.1, 4]) // Set the zoom range
     .on("zoom", (event) => {
       g.attr("transform", event.transform);
-      updateMinimap(); // 在縮放時更新縮略圖
+      updateMinimap(); // Update thumbnails when zooming
     });
   
   if (svg) {
@@ -886,7 +886,7 @@ function initZoom() {
   }
 }
 
-// 渲染依賴關係圖 - 修改為全局視圖和 enter/update/exit 模式
+// Render dependency graph -Modify to global view and enter/update/exit mode
 function renderDependencyGraph() {
   if (!dependencyGraphElement || !window.d3) {
     console.warn("D3 or dependency graph element not found.");
@@ -900,7 +900,7 @@ function renderDependencyGraph() {
 
   updateDimensions();
 
-  // 如果沒有任務，清空圖表並顯示提示
+  // If there is no task, clear the chart and display the prompt
   if (tasks.length === 0) {
     dependencyGraphElement.innerHTML = `<p class="placeholder">${translate("dependency_graph_placeholder_empty")}</p>`;
     svg = null;
@@ -909,7 +909,7 @@ function renderDependencyGraph() {
     return;
   }
 
-  // 1. 準備節點 (Nodes) 和連結 (Links)
+  // 1. Prepare nodes and links
   const nodes = tasks.map((task) => ({
     id: task.id,
     name: task.name,
@@ -936,7 +936,7 @@ function renderDependencyGraph() {
   });
 
   if (!svg) {
-    // --- 首次渲染 ---
+    // ---First rendering ---
     console.log("First render of dependency graph");
     dependencyGraphElement.innerHTML = "";
 
@@ -945,16 +945,16 @@ function renderDependencyGraph() {
       .attr("viewBox", [0, 0, width, height])
       .attr("preserveAspectRatio", "xMidYMid meet");
 
-    // 添加縮略圖背景
-    const minimapSize = Math.min(width, height) * 0.2; // 縮略圖大小為主視圖的20%
+    // Add thumbnail background
+    const minimapSize = Math.min(width, height) * 0.2; // Thumbnail size is 20% of the main view
     const minimapMargin = 40;
     
-    // 創建縮略圖容器
+    // Create thumbnail container
     const minimap = svg.append("g")
       .attr("class", "minimap")
       .attr("transform", `translate(${width - minimapSize - minimapMargin}, ${height - minimapSize - minimapMargin*(height/width)})`);
 
-    // 添加縮略圖背景
+    // Add thumbnail background
     minimap.append("rect")
       .attr("width", minimapSize)
       .attr("height", minimapSize)
@@ -964,20 +964,20 @@ function renderDependencyGraph() {
       .attr("rx", 4)
       .attr("ry", 4);
 
-    // 創建縮略圖內容組
+    // Create thumbnail content group
     minimap.append("g")
       .attr("class", "minimap-content");
 
-    // 添加視口指示器
+    // Add a viewport indicator
     minimap.append("rect")
       .attr("class", "minimap-viewport");
 
     g = svg.append("g");
 
-    // 初始化並添加縮放行為
+    // Initialize and add scaling behavior
     initZoom();
 
-    // 添加箭頭定義
+    // Add arrow definition
     g.append("defs")
       .append("marker")
       .attr("id", "arrowhead")
@@ -991,57 +991,57 @@ function renderDependencyGraph() {
       .attr("d", "M0,-5L10,0L0,5")
       .attr("fill", "#999");
 
-    // 初始化力導向模擬
+    // Initialization force-oriented simulation
     simulation = d3.forceSimulation()
       .force("link", d3.forceLink().id((d) => d.id).distance(100))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collide", d3.forceCollide().radius(30))
-      // 新增：水平分布力，用於優化節點在水平方向的分布，根據節點的入度和出度來決定節點的水平位置，入度為0的節點（起始節點）靠左，出度為0的節點（終止節點）靠右，其他節點則分布在中間位置
+      // New: Horizontal distribution force is used to optimize the distribution of nodes in the horizontal direction, and determine the horizontal position of the node based on the inlet and outgoing degree of the node. The node with inlet is 0 (starting node) is on the left, the node with outgoing degree is 0 (terminal node) is on the right, and other nodes are distributed in the middle position.
       .force("x", d3.forceX().x(d => {
-        // 計算節點的入度和出度
+        // Calculate the incoming and outgoing degrees of nodes
         const inDegree = links.filter(l => (l.target.id || l.target) === d.id).length;
         const outDegree = links.filter(l => (l.source.id || l.source) === d.id).length;
         
         if (inDegree === 0) {
-          // 入度為0的節點（起始節點）靠左
+          // The node with an entry degree of 0 (start node) depends on the left
           return width * 0.2;
         } else if (outDegree === 0) {
-          // 出度為0的節點（終止節點）靠右
+          // Node with an outgoing degree of 0 (termination node) is right
           return width * 0.8;
         } else {
-          // 其他節點在中間
+          // Other nodes are in the middle
           return width * 0.5;
         }
       }).strength(0.2))
-      // 新增：基于節點度數的垂直分布力
+      // New: Vertical distributed force based on node degree
       .force("y", d3.forceY().y(height / 2).strength(d => {
-        // 計算節點的總度數（入度+出度）
+        // Calculate the total number of nodes (input + output)
         const inDegree = links.filter(l => (l.target.id || l.target) === d.id).length;
         const outDegree = links.filter(l => (l.source.id || l.source) === d.id).length;
         const totalDegree = inDegree + outDegree;
         
-        // 度數越大，力越大（基礎力0.05，每個連接增加0.03，最大0.3）
+        // The greater the degree, the greater the force (basic force is 0.05, each connection increases by 0.03, maximum 0.3)
         return Math.min(0.05 + totalDegree * 0.03, 0.3);
       }))
       .on("tick", ticked);
 
-    // 添加用於存放連結和節點的組
+    // Add a group for storing links and nodes
     g.append("g").attr("class", "links");
     g.append("g").attr("class", "nodes");
   } else {
-    // --- 更新圖表渲染 ---
+    // ---Update chart rendering ---
     console.log("Updating dependency graph");
     svg.attr("viewBox", [0, 0, width, height]);
     simulation.force("center", d3.forceCenter(width / 2, height / 2));
   }
 
-  // --- 預先運算穩定的節點位置 ---
-  // 複製節點和連結以進行穩定化計算
+  // ---Pre-computing stable node locations ---
+  // Replicate nodes and links for stabilization calculations
   const stableNodes = [...nodes];
   const stableLinks = [...links];
   
-  // 暫時創建一個模擬器來計算穩定的位置
+  // Temporarily create an emulator to calculate stable locations
   const stableSim = d3
     .forceSimulation(stableNodes)
     .force("link", d3.forceLink(stableLinks).id(d => d.id).distance(100))
@@ -1049,12 +1049,12 @@ function renderDependencyGraph() {
     .force("center", d3.forceCenter(width / 2, height / 2))
     .force("collide", d3.forceCollide().radius(30));
   
-  // 預熱模擬獲得穩定位置
+  // Preheating simulation to obtain stable position
   for (let i = 0; i < 10; i++) {
     stableSim.tick();
   }
   
-  // 將穩定位置複製回原始節點
+  // Copy the stable location back to the original node
   stableNodes.forEach((stableNode) => {
     const originalNode = nodes.find(n => n.id === stableNode.id);
     if (originalNode) {
@@ -1063,23 +1063,23 @@ function renderDependencyGraph() {
     }
   });
   
-  // 停止臨時模擬器
+  // Stop the temporary emulator
   stableSim.stop();
-  // --- 預先運算結束 ---
+  // ---Pre-operation ends ---
 
-  // 3. 更新連結 (無動畫)
+  // 3. Update link (no animation)
   const linkSelection = g
-    .select(".links") // 選擇放置連結的 g 元素
+    .select(".links") // Select the g element to place the link
     .selectAll("line.link")
     .data(
       links,
       (d) => `${d.source.id || d.source}-${d.target.id || d.target}`
-    ); // Key function 基於 source/target ID
+    ); // Key function is based on source/target ID
 
-  // Exit - 直接移除舊連結
+  // Exit -Remove old links directly
   linkSelection.exit().remove();
 
-  // Enter - 添加新連結 (無動畫)
+  // Enter -Add new link (no animation)
   const linkEnter = linkSelection
     .enter()
     .append("line")
@@ -1089,41 +1089,41 @@ function renderDependencyGraph() {
     .attr("stroke-opacity", 0.6)
     .attr("stroke-width", 1.5);
 
-  // 立即設置連結位置
+  // Set the link position immediately
   linkEnter
     .attr("x1", d => d.source.x || 0)
     .attr("y1", d => d.source.y || 0)
     .attr("x2", d => d.target.x || 0)
     .attr("y2", d => d.target.y || 0);
 
-  // 4. 更新節點 (無動畫)
+  // 4. Update node (no animation)
   const nodeSelection = g
-    .select(".nodes") // 選擇放置節點的 g 元素
+    .select(".nodes") // Select the g element to place the node
     .selectAll("g.node-item")
-    .data(nodes, (d) => d.id); // 使用 ID 作為 key
+    .data(nodes, (d) => d.id); // Use ID as key
 
-  // Exit - 直接移除舊節點
+  // Exit -Remove old nodes directly
   nodeSelection.exit().remove();
 
-  // Enter - 添加新節點組 (無動畫，直接在最終位置創建)
+  // Enter -Add new node group (no animation, created directly at the final location)
   const nodeEnter = nodeSelection
     .enter()
     .append("g")
-    .attr("class", (d) => `node-item status-${getStatusClass(d.status)}`) // 使用輔助函數設置 class
+    .attr("class", (d) => `node-item status-${getStatusClass(d.status)}`) // Setting class using helper functions
     .attr("data-id", (d) => d.id)
-    // 直接使用預計算的位置，無需縮放或透明度過渡
+    // Use pre-computed positions directly without scaling or transparency transitions
     .attr("transform", (d) => `translate(${d.x || 0}, ${d.y || 0})`)
-    .call(drag(simulation)); // 添加拖拽
+    .call(drag(simulation)); // Add drag and drop
 
-  // 添加圓形到 Enter 選擇集
+  // Add a circle to Enter selection set
   nodeEnter
     .append("circle")
     .attr("r", 10)
     .attr("stroke", "#fff")
     .attr("stroke-width", 1.5)
-    .attr("fill", getNodeColor); // 直接設置顏色
+    .attr("fill", getNodeColor); // Set the color directly
 
-  // 添加文字到 Enter 選擇集
+  // Add text to Enter selection set
   nodeEnter
     .append("text")
     .attr("x", 15)
@@ -1132,18 +1132,18 @@ function renderDependencyGraph() {
     .attr("font-size", "10px")
     .attr("fill", "#ccc");
 
-  // 添加標題 (tooltip) 到 Enter 選擇集
+  // Add a title (tooltip) to Enter Selection Set
   nodeEnter
     .append("title")
     .text((d) => `${d.name} (${getStatusText(d.status)})`);
 
-  // 添加點擊事件到 Enter 選擇集
+  // Add click event to Enter selection set
   nodeEnter.on("click", (event, d) => {
     selectTask(d.id);
     event.stopPropagation();
   });
 
-  // Update - 立即更新現有節點 (無動畫)
+  // Update -Update existing nodes immediately (no animation)
   nodeSelection
     .attr("transform", (d) => `translate(${d.x || 0}, ${d.y || 0})`)
     .attr("class", (d) => `node-item status-${getStatusClass(d.status)}`);
@@ -1152,7 +1152,7 @@ function renderDependencyGraph() {
     .select("circle")
     .attr("fill", getNodeColor);
 
-  // << 新增：重新定義 drag 函數 >>
+  // << New: Redefine drag function >>
   function drag(simulation) {
     function dragstarted(event, d) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -1167,10 +1167,10 @@ function renderDependencyGraph() {
 
     function dragended(event, d) {
       if (!event.active) simulation.alphaTarget(0);
-      // 取消固定位置，讓節點可以繼續被力導引影響 (如果需要)
+      // Unfixed position so that nodes can continue to be affected by force guidance (if required)
       // d.fx = null;
       // d.fy = null;
-      // 或者保留固定位置直到再次拖動
+      // Or leave the fixed position until drag again
     }
 
     return d3
@@ -1179,13 +1179,13 @@ function renderDependencyGraph() {
       .on("drag", dragged)
       .on("end", dragended);
   }
-  // << drag 函數定義結束 >>
+  // << end of drag function definition >>
 
-  // 5. 更新力導向模擬，但不啟動
-  simulation.nodes(nodes); // 更新模擬節點
-  simulation.force("link").links(links); // 更新模擬連結
+  // 5. Update force-oriented simulation, but not start
+  simulation.nodes(nodes); // Update the simulation node
+  simulation.force("link").links(links); // Update simulation link
   
-  // 更新水平分布力的目標位置
+  // Update the target position of horizontal distribution force
   simulation.force("x").x(d => {
     const inDegree = links.filter(l => (l.target.id || l.target) === d.id).length;
     const outDegree = links.filter(l => (l.source.id || l.source) === d.id).length;
@@ -1198,14 +1198,14 @@ function renderDependencyGraph() {
       return width * 0.5;
     }
   });
-  // 注意：移除了 restart() 調用，防止刷新時的動畫跳變
+  // Note: Remove the restart() call to prevent animations from jumping during refresh
 }
 
-// Tick 函數: 更新節點和連結位置
+// Tick function: Update node and link location
 function ticked() {
   if (!g) return;
 
-  // 更新連結位置
+  // Update link location
   g.select(".links")
     .selectAll("line.link")
     .attr("x1", (d) => d.source.x)
@@ -1213,17 +1213,17 @@ function ticked() {
     .attr("x2", (d) => d.target.x)
     .attr("y2", (d) => d.target.y);
 
-  // 更新節點組位置
+  // Update node group location
   g.select(".nodes")
     .selectAll("g.node-item")
-    // << 修改：添加座標後備值 >>
+    // << Modify: Add coordinate backup value >>
     .attr("transform", (d) => `translate(${d.x || 0}, ${d.y || 0})`);
 
-  // 更新縮略圖
+  // Update thumbnails
   updateMinimap();
 }
 
-// 函數：根據節點數據返回顏色 (示例)
+// Function: Return color based on node data (example)
 function getNodeColor(nodeData) {
   switch (nodeData.status) {
     case "已完成":
@@ -1234,13 +1234,13 @@ function getNodeColor(nodeData) {
       return "var(--primary-color)";
     case "待處理":
     case "pending":
-      return "#f1c40f"; // 與進度條和狀態標籤一致
+      return "#f1c40f"; // Consistent with progress bar and status tags
     default:
-      return "#7f8c8d"; // 未知狀態
+      return "#7f8c8d"; // Unknown status
   }
 }
 
-// 輔助函數
+// Helper functions
 function getStatusText(status) {
   switch (status) {
     case "pending":
@@ -1256,10 +1256,10 @@ function getStatusText(status) {
 
 function updateCurrentTime() {
   const now = new Date();
-  // 保留原始格式，如果需要本地化時間，可以在此處使用 translate 或其他庫
-  const timeString = now.toLocaleString(); // 考慮是否需要基於 currentLang 格式化
+  // Keep the original format, if localization time is required, you can use translate or other libraries here
+  const timeString = now.toLocaleString(); // Consider whether the currentLang format needs to be based on currentLang
   if (currentTimeElement) {
-    // 將靜態文本和動態時間分開
+    // Separate static text and dynamic time
     const footerTextElement = currentTimeElement.parentNode.childNodes[0];
     if (footerTextElement && footerTextElement.nodeType === Node.TEXT_NODE) {
       footerTextElement.nodeValue = translate("footer_copyright");
@@ -1267,15 +1267,15 @@ function updateCurrentTime() {
     currentTimeElement.textContent = timeString;
   }
 }
-// 更新項目進度指示器
+// Update project progress indicator
 function updateProgressIndicator() {
   const totalTasks = tasks.length;
   if (totalTasks === 0) {
-    progressIndicator.style.display = "none"; // 沒有任務時隱藏
+    progressIndicator.style.display = "none"; // Hide when there is no task
     return;
   }
 
-  progressIndicator.style.display = "block"; // 確保顯示
+  progressIndicator.style.display = "block"; // Make sure to display
 
   const completedTasks = tasks.filter(
     (task) => task.status === "completed" || task.status === "已完成"
@@ -1297,7 +1297,7 @@ function updateProgressIndicator() {
   progressInProgress.style.width = `${inProgressPercent}%`;
   progressPending.style.width = `${pendingPercent}%`;
 
-  // 更新標籤 (使用 translate)
+  // Update tags (using translate)
   progressLabels.innerHTML = `
     <span class="label-completed">${translate(
       "progress_completed"
@@ -1314,16 +1314,16 @@ function updateProgressIndicator() {
   `;
 }
 
-// 新增：渲染全局分析結果
+// New: Rendering global analysis results
 function renderGlobalAnalysisResult() {
   let targetElement = document.getElementById("global-analysis-result");
 
-  // 如果元素不存在，嘗試創建並添加到合適的位置 (例如 header 或 main content 前)
+  // If the element does not exist, try to create and add it to the appropriate location (for example, before header or main content)
   if (!targetElement) {
     targetElement = document.createElement("div");
     targetElement.id = "global-analysis-result";
-    targetElement.className = "global-analysis-section"; // 添加樣式 class
-    // 嘗試插入到 header 之後或 main 之前
+    targetElement.className = "global-analysis-section"; // Add style class
+    // Try inserting after or before main
     const header = document.querySelector("header");
     const mainContent = document.querySelector("main");
     if (header && header.parentNode) {
@@ -1331,7 +1331,7 @@ function renderGlobalAnalysisResult() {
     } else if (mainContent && mainContent.parentNode) {
       mainContent.parentNode.insertBefore(targetElement, mainContent);
     } else {
-      // 作為最後手段，添加到 body 開頭
+      // As a last resort, add to the beginning of the body
       document.body.insertBefore(targetElement, document.body.firstChild);
     }
   }
@@ -1345,39 +1345,39 @@ function renderGlobalAnalysisResult() {
         `;
     targetElement.style.display = "block";
   } else {
-    targetElement.style.display = "none"; // 如果沒有結果則隱藏
-    targetElement.innerHTML = ""; // 清空內容
+    targetElement.style.display = "none"; // Hide if there is no result
+    targetElement.innerHTML = ""; // Clear content
   }
 }
 
-// 新增：高亮依賴圖中的節點
+// New: Highlight nodes in dependency graph
 function highlightNode(taskId, status = null) {
   if (!g || !window.d3) return;
 
-  // 清除所有節點的高亮
-  g.select(".nodes") // 從 g 開始選擇
+  // Clear all nodes highlighting
+  g.select(".nodes") // Start with g
     .selectAll("g.node-item")
     .classed("highlighted", false);
 
   if (!taskId) return;
 
-  // 高亮選中的節點
+  // Highlight selected nodes
   const selectedNode = g
-    .select(".nodes") // 從 g 開始選擇
+    .select(".nodes") // Start with g
     .select(`g.node-item[data-id="${taskId}"]`);
   if (!selectedNode.empty()) {
     selectedNode.classed("highlighted", true);
-    // 可以選擇性地將選中節點帶到最前面
+    // Selected nodes can be optionally brought to the front
     // selectedNode.raise();
   }
 }
 
-// 新增：輔助函數獲取狀態 class (應放在 ticked 函數之後，getNodeColor 之前或之後均可)
+// New: Helper function gets the status class (should be placed after the ticked function, before or after getNodeColor)
 function getStatusClass(status) {
-  return status ? status.replace(/_/g, "-") : "unknown"; // 替換所有下劃線
+  return status ? status.replace(/_/g, "-") : "unknown"; // Replace all underscores
 }
 
-// 新增：更新寬高的函數
+// New: Updated width and height function
 function updateDimensions() {
   if (dependencyGraphElement) {
     width = dependencyGraphElement.clientWidth;
@@ -1385,7 +1385,7 @@ function updateDimensions() {
   }
 }
 
-// 添加縮略圖更新函數
+// Add thumbnail update function
 function updateMinimap() {
   if (!svg || !simulation) return;
 
@@ -1393,20 +1393,20 @@ function updateMinimap() {
   const nodes = simulation.nodes();
   const links = simulation.force("link").links();
 
-  // 計算當前圖的邊界（添加padding）
-  const padding = 20; // 添加內邊距
+  // Calculate the boundary of the current graph (add padding)
+  const padding = 20; // Add inner margin
   const xExtent = d3.extent(nodes, d => d.x);
   const yExtent = d3.extent(nodes, d => d.y);
   const graphWidth = (xExtent[1] - xExtent[0]) || width;
   const graphHeight = (yExtent[1] - yExtent[0]) || height;
 
-  // 計算縮放比例，確保考慮padding
+  // Calculate the scaling and make sure padding is considered
   const scale = Math.min(
     minimapSize / (graphWidth + padding * 2),
     minimapSize / (graphHeight + padding * 2)
-  ) * 0.9; // 0.9作為安全係數
+  ) * 0.9; // 0.9 as safety factor
 
-  // 創建縮放函數，加入padding
+  // Create a scaling function and add padding
   const minimapX = d3.scaleLinear()
     .domain([xExtent[0] - padding, xExtent[1] + padding])
     .range([0, minimapSize]);
@@ -1414,7 +1414,7 @@ function updateMinimap() {
     .domain([yExtent[0] - padding, yExtent[1] + padding])
     .range([0, minimapSize]);
 
-  // 更新縮略圖中的連接
+  // Update connections in thumbnails
   const minimapContent = svg.select(".minimap-content");
   const minimapLinks = minimapContent.selectAll(".minimap-link")
     .data(links);
@@ -1433,7 +1433,7 @@ function updateMinimap() {
 
   minimapLinks.exit().remove();
 
-  // 更新縮略圖中的節點
+  // Update nodes in thumbnails
   const minimapNodes = minimapContent.selectAll(".minimap-node")
     .data(nodes);
 
@@ -1448,7 +1448,7 @@ function updateMinimap() {
 
   minimapNodes.exit().remove();
 
-  // 更新視口指示器
+  // Update viewport indicator
   const transform = d3.zoomTransform(svg.node());
   const viewportWidth = width / transform.k;
   const viewportHeight = height / transform.k;
@@ -1462,5 +1462,5 @@ function updateMinimap() {
     .attr("height", minimapY(viewportY + viewportHeight) - minimapY(viewportY));
 }
 
-// 函數：啟用節點拖拽 (保持不變)
+// Function: Enable node drag (still unchanged)
 // ... drag ...

@@ -1,39 +1,39 @@
-// 導出所有任務工具
+// Export all task tools
 
-// planTask
+// Plan task
 export { planTask, planTaskSchema } from "./planTask.js";
 
-// analyzeTask
+// Analyze task
 export { analyzeTask, analyzeTaskSchema } from "./analyzeTask.js";
 
-// reflectTask
+// Reflect task
 export { reflectTask, reflectTaskSchema } from "./reflectTask.js";
 
-// splitTasks
+// Split tasks
 export { splitTasks, splitTasksSchema } from "./splitTasks.js";
 
-// listTasks
+// List tasks
 export { listTasks, listTasksSchema } from "./listTasks.js";
 
-// executeTask
+// Execute task
 export { executeTask, executeTaskSchema } from "./executeTask.js";
 
-// verifyTask
+// Verify task
 export { verifyTask, verifyTaskSchema } from "./verifyTask.js";
 
-// deleteTask
+// Delete task
 export { deleteTask, deleteTaskSchema } from "./deleteTask.js";
 
-// clearAllTasks
+// Clear all tasks
 export { clearAllTasks, clearAllTasksSchema } from "./clearAllTasks.js";
 
-// updateTaskContent
+// Update task content
 export { updateTaskContent, updateTaskContentSchema } from "./updateTask.js";
 
-// queryTask
+// Query task
 export { queryTask, queryTaskSchema } from "./queryTask.js";
 
-// getTaskDetail
+// Get task detail
 export { getTaskDetail, getTaskDetailSchema } from "./getTaskDetail.js";
 
 export { splitTasksRaw, splitTasksRawSchema } from "./splitTasksRaw.js";

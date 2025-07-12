@@ -1,6 +1,6 @@
 /**
- * executeTask prompt 生成器
- * 負責將模板和參數組合成最終的 prompt
+ * executeTask prompt generator
+ * Responsible for combining templates and parameters into the final prompt
  */
 
 import {
@@ -11,7 +11,7 @@ import {
 import { Task, TaskStatus } from "../../types/index.js";
 
 /**
- * 任務複雜度評估的介面
+ * Interface for task complexity assessment
  */
 interface ComplexityAssessment {
   level: string;
@@ -23,7 +23,7 @@ interface ComplexityAssessment {
 }
 
 /**
- * executeTask prompt 參數介面
+ * executeTask prompt parameter interface
  */
 export interface ExecuteTaskPromptParams {
   task: Task;
@@ -33,9 +33,9 @@ export interface ExecuteTaskPromptParams {
 }
 
 /**
- * 獲取複雜度級別的樣式文字
- * @param level 複雜度級別
- * @returns 樣式文字
+ * Get style text at complexity level
+ * @param level Complexity level
+ * @returns Style text
  */
 function getComplexityStyle(level: string): string {
   switch (level) {
@@ -51,9 +51,9 @@ function getComplexityStyle(level: string): string {
 }
 
 /**
- * 獲取 executeTask 的完整 prompt
- * @param params prompt 參數
- * @returns 生成的 prompt
+ * Get the complete prompt of executeTask
+ * @param params prompt parameter
+ * @returns Generated prompt
  */
 export async function getExecuteTaskPrompt(
   params: ExecuteTaskPromptParams
@@ -167,6 +167,6 @@ export async function getExecuteTaskPrompt(
     complexityTemplate: complexityPrompt,
   });
 
-  // 載入可能的自定義 prompt
+  // Load possible custom prompts
   return loadPrompt(prompt, "EXECUTE_TASK");
 }

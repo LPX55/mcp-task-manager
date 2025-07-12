@@ -1,20 +1,20 @@
 /**
- * initProjectRules prompt 生成器
- * 負責將模板和參數組合成最終的 prompt
+ * initProjectRules prompt generator
+ * Responsible for combining templates and parameters into the final prompt
  */
 
 import { loadPrompt, loadPromptFromTemplate } from "../loader.js";
 /**
- * initProjectRules prompt 參數介面
+ * initProjectRules prompt parameter interface
  */
 export interface InitProjectRulesPromptParams {
-  // 目前沒有額外參數，未來可按需擴展
+  // There are currently no additional parameters, and can be expanded on demand in the future
 }
 
 /**
- * 獲取 initProjectRules 的完整 prompt
- * @param params prompt 參數（可選）
- * @returns 生成的 prompt
+ * Get the full prompt of initProjectRules
+ * @param params prompt parameter (optional)
+ * @returns Generated prompt
  */
 export async function getInitProjectRulesPrompt(
   params?: InitProjectRulesPromptParams
@@ -23,6 +23,6 @@ export async function getInitProjectRulesPrompt(
     "initProjectRules/index.md"
   );
 
-  // 載入可能的自定義 prompt (通過環境變數覆蓋或追加)
+  // Load possible custom prompt (overwrite or append via environment variables)
   return loadPrompt(indexTemplate, "INIT_PROJECT_RULES");
 }

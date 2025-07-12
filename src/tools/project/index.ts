@@ -1,6 +1,6 @@
-// 導出所有專案工具
+// Export all project tools
 
-// initProjectRules
+// Init project rules
 export {
   initProjectRules,
   initProjectRulesSchema,

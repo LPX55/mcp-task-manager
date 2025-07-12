@@ -1,6 +1,6 @@
 /**
- * deleteTask prompt 生成器
- * 負責將模板和參數組合成最終的 prompt
+ * deleteTask prompt generator
+ * Responsible for combining templates and parameters into the final prompt
  */
 
 import {
@@ -11,7 +11,7 @@ import {
 import { Task } from "../../types/index.js";
 
 /**
- * deleteTask prompt 參數介面
+ * deleteTask prompt parameter interface
  */
 export interface DeleteTaskPromptParams {
   taskId: string;
@@ -22,16 +22,16 @@ export interface DeleteTaskPromptParams {
 }
 
 /**
- * 獲取 deleteTask 的完整 prompt
- * @param params prompt 參數
- * @returns 生成的 prompt
+ * Get the full prompt of deleteTask
+ * @param params prompt parameter
+ * @returns Generated prompt
  */
 export async function getDeleteTaskPrompt(
   params: DeleteTaskPromptParams
 ): Promise<string> {
   const { taskId, task, success, message, isTaskCompleted } = params;
 
-  // 處理任務不存在的情況
+  // Handle the situation where the task does not exist
   if (!task) {
     const notFoundTemplate = await loadPromptFromTemplate(
       "deleteTask/notFound.md"
@@ -41,7 +41,7 @@ export async function getDeleteTaskPrompt(
     });
   }
 
-  // 處理任務已完成的情況
+  // Handle the task completed
   if (isTaskCompleted) {
     const completedTemplate = await loadPromptFromTemplate(
       "deleteTask/completed.md"
@@ -52,7 +52,7 @@ export async function getDeleteTaskPrompt(
     });
   }
 
-  // 處理刪除成功或失敗的情況
+  // Handle the situation where the deletion is successful or failed
   const responseTitle = success ? "Success" : "Failure";
   const indexTemplate = await loadPromptFromTemplate("deleteTask/index.md");
   const prompt = generatePrompt(indexTemplate, {
@@ -60,6 +60,6 @@ export async function getDeleteTaskPrompt(
     message,
   });
 
-  // 載入可能的自定義 prompt
+  // Load possible custom prompts
   return loadPrompt(prompt, "DELETE_TASK");
 }

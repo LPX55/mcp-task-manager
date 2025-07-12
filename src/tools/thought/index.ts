@@ -1,4 +1,4 @@
-// 導出所有思維鏈工具
+// Export all thinking chain tools
 
-// processThought
+// Process thought
 export { processThought, processThoughtSchema } from "./processThought.js";

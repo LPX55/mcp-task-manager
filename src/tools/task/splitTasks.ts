@@ -7,97 +7,96 @@ import {
 import { RelatedFileType, Task } from "../../types/index.js";
 import { getSplitTasksPrompt } from "../../prompts/index.js";
 
-// 拆分任務工具
+// Split Task Tool
 export const splitTasksSchema = z.object({
   updateMode: z
     .enum(["append", "overwrite", "selective", "clearAllTasks"])
-    .describe(
-      "任務更新模式選擇：'append'(保留所有現有任務並添加新任務)、'overwrite'(清除所有未完成任務並完全替換，保留已完成任務)、'selective'(智能更新：根據任務名稱匹配更新現有任務，保留不在列表中的任務，推薦用於任務微調)、'clearAllTasks'(清除所有任務並創建備份)。\n預設為'clearAllTasks'模式，只有用戶要求變更或修改計劃內容才使用其他模式"
+.describe(
+      "Task update mode selection: 'append' (retain all existing tasks and add new tasks), 'overwrite' (clear all unfinished tasks and replace them completely, retain completed tasks), 'selective' (intelligent update: update existing tasks according to task name matching, retain tasks that are not in the list, recommended for task fine-tuning), 'clearAllTasks' (clear all tasks and create backups).\nPreset to 'clearAllTasks' mode, use other modes only if the user requests to change or modify the scheduled content"
     ),
   tasks: z
-    .array(
+ .array(
       z.object({
         name: z
           .string()
           .max(100, {
-            message: "任務名稱過長，請限制在100個字符以內",
+            message: "The task name is too long, please limit it to 100 characters",
           })
-          .describe("簡潔明確的任務名稱，應能清晰表達任務目的"),
+          .describe("A concise and clear task name should clearly express the purpose of the task"),
         description: z
           .string()
           .min(10, {
-            message: "任務描述過短，請提供更詳細的內容以確保理解",
+            message: "The task description is too short, please provide more detailed content to ensure understanding",
           })
-          .describe("詳細的任務描述，包含實施要點、技術細節和驗收標準"),
+          .describe("Detailed task description, including implementation points, technical details and acceptance standards"),
         implementationGuide: z
           .string()
           .describe(
-            "此特定任務的具體實現方法和步驟，請參考之前的分析結果提供精簡pseudocode"
+            "For specific implementation methods and steps for this specific task, please refer to the previous analysis results to provide a streamlined pseudocode"
           ),
-        dependencies: z
+dependencies: z
           .array(z.string())
           .optional()
           .describe(
-            "此任務依賴的前置任務ID或任務名稱列表，支持兩種引用方式，名稱引用更直觀，是一個字串陣列"
+            "This task depends on the pre-task ID or task name list, supports two reference methods, name reference is more intuitive, and is a string array"
           ),
         notes: z
           .string()
           .optional()
-          .describe("補充說明、特殊處理要求或實施建議（選填）"),
+          .describe("Supplementary Notes, Special Handling Requirements or Implementation Recommendations (optional)"),
         relatedFiles: z
           .array(
             z.object({
               path: z
                 .string()
                 .min(1, {
-                  message: "文件路徑不能為空",
+                  message: "The file path cannot be empty",
                 })
-                .describe("文件路徑，可以是相對於項目根目錄的路徑或絕對路徑"),
+.describe("File path, which can be a path or an absolute path relative to the root directory of the project"),
               type: z
                 .nativeEnum(RelatedFileType)
                 .describe(
-                  "文件類型 (TO_MODIFY: 待修改, REFERENCE: 參考資料, CREATE: 待建立, DEPENDENCY: 依賴文件, OTHER: 其他)"
-                ),
+"File type (TO_MODIFY: to be modified, REFERENCE: Reference, CREATE: to be created, DEPENDENCY: to be dependent files, OTHER: others)"                ),
               description: z
                 .string()
                 .min(1, {
-                  message: "文件描述不能為空",
+                  message: "The file description cannot be empty",
                 })
-                .describe("文件描述，用於說明文件的用途和內容"),
+                .describe("File description, used to illustrate the purpose and content of the file"),
               lineStart: z
                 .number()
                 .int()
                 .positive()
                 .optional()
-                .describe("相關代碼區塊的起始行（選填）"),
+                .describe("The starting line of the relevant code block (optional)"),
               lineEnd: z
                 .number()
                 .int()
                 .positive()
                 .optional()
-                .describe("相關代碼區塊的結束行（選填）"),
+                .describe("end line of related code block (optional)"),
             })
           )
-          .optional()
+.optional()
           .describe(
-            "與任務相關的文件列表，用於記錄與任務相關的代碼文件、參考資料、要建立的文件等（選填）"
+            "A list of tasks related to the file, used to record tasks related to the code files, reference materials, files to be created, etc. (optional)"
           ),
         verificationCriteria: z
           .string()
           .optional()
-          .describe("此特定任務的驗證標準和檢驗方法"),
+          .describe("Verification criteria and verification methods for this specific task"),
       })
     )
     .min(1, {
-      message: "請至少提供一個任務",
+      message: "Please provide at least one task",
     })
     .describe(
-      "結構化的任務清單，每個任務應保持原子性且有明確的完成標準，避免過於簡單的任務，簡單修改可與其他任務整合，避免任務過多"
+      "Structured task list, each task should be atomic and have clear completion standards, avoid overly simple tasks, and simple modifications can be integrated with other tasks to avoid too many tasks."
     ),
   globalAnalysisResult: z
     .string()
     .optional()
-    .describe("任務最終目標，來自之前分析適用於所有任務的通用部分"),
+    .describe("The task end goal, from the common part that was previously analyzed for all tasks"),
 });
 
 export async function splitTasks({
@@ -106,7 +105,7 @@ export async function splitTasks({
   globalAnalysisResult,
 }: z.infer<typeof splitTasksSchema>) {
   try {
-    // 檢查 tasks 裡面的 name 是否有重複
+    // Check whether the name in tasks is duplicated
     const nameSet = new Set();
     for (const task of tasks) {
       if (nameSet.has(task.name)) {
@@ -114,22 +113,21 @@ export async function splitTasks({
           content: [
             {
               type: "text" as const,
-              text: "tasks 參數中存在重複的任務名稱，請確保每個任務名稱是唯一的",
-            },
+text: "There are duplicate task names in the tasks parameter, please make sure that each task name is unique",            },
           ],
         };
       }
       nameSet.add(task.name);
     }
 
-    // 根據不同的更新模式處理任務
+    // Process tasks according to different update modes
     let message = "";
     let actionSuccess = true;
     let backupFile = null;
     let createdTasks: Task[] = [];
     let allTasks: Task[] = [];
 
-    // 將任務資料轉換為符合batchCreateOrUpdateTasks的格式
+    // Convert task data to a format that conforms to batch create or update tasks
     const convertedTasks = tasks.map((task) => ({
       name: task.name,
       description: task.description,
@@ -146,7 +144,7 @@ export async function splitTasks({
       })),
     }));
 
-    // 處理 clearAllTasks 模式
+    // Handle clearAllTasks mode
     if (updateMode === "clearAllTasks") {
       const clearResult = await modelClearAllTasks();
 
@@ -155,7 +153,7 @@ export async function splitTasks({
         backupFile = clearResult.backupFile;
 
         try {
-          // 清空任務後再創建新任務
+          // Create a new task after clearing it
           createdTasks = await batchCreateOrUpdateTasks(
             convertedTasks,
             "append",
@@ -173,7 +171,7 @@ export async function splitTasks({
         message = clearResult.message;
       }
     } else {
-      // 對於其他模式，直接使用 batchCreateOrUpdateTasks
+      // For other modes, use batchCreateOrUpdateTasks directly
       try {
         createdTasks = await batchCreateOrUpdateTasks(
           convertedTasks,
@@ -181,34 +179,34 @@ export async function splitTasks({
           globalAnalysisResult
         );
 
-        // 根據不同的更新模式生成消息
-        switch (updateMode) {
+        // Generate messages according to different update modes
+switch (updateMode) {
           case "append":
-            message = `成功追加了 ${createdTasks.length} 個新任務。`;
+            message = `Successfully added ${createdTasks.length} new tasks. `;
             break;
           case "overwrite":
-            message = `成功清除未完成任務並創建了 ${createdTasks.length} 個新任務。`;
+            message = `The unfinished task was successfully cleared and new tasks were created ${createdTasks.length}. `;
             break;
           case "selective":
-            message = `成功選擇性更新/創建了 ${createdTasks.length} 個任務。`;
+            message = `Successfully selectively updated/created ${createdTasks.length} tasks. `;
             break;
         }
       } catch (error) {
         actionSuccess = false;
-        message = `任務創建失敗：${
+        message = `Task creation failed:${
           error instanceof Error ? error.message : String(error)
         }`;
       }
     }
 
-    // 獲取所有任務用於顯示依賴關係
+    // Get all tasks for displaying dependencies
     try {
       allTasks = await getAllTasks();
     } catch (error) {
-      allTasks = [...createdTasks]; // 如果獲取失敗，至少使用剛創建的任務
+      allTasks = [...createdTasks]; // If the acquisition fails, at least use the task you just created
     }
 
-    // 使用prompt生成器獲取最終prompt
+    // Use the propt generator to get the final propt
     const prompt = await getSplitTasksPrompt({
       updateMode,
       createdTasks,
@@ -236,7 +234,7 @@ export async function splitTasks({
         {
           type: "text" as const,
           text:
-            "執行任務拆分時發生錯誤: " +
+            "An error occurred while performing task splitting: " +
             (error instanceof Error ? error.message : String(error)),
         },
       ],

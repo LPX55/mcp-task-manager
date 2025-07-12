@@ -10,21 +10,20 @@ import { TaskStatus, Task } from "../../types/index.js";
 import { getExecuteTaskPrompt } from "../../prompts/index.js";
 import { loadTaskRelatedFiles } from "../../utils/fileLoader.js";
 
-// 執行任務工具
+//Task execution tool
 export const executeTaskSchema = z.object({
   taskId: z
     .string()
     .regex(UUID_V4_REGEX, {
-      message: "任務ID格式無效，請提供有效的UUID v4格式",
+      message: "The task ID format is invalid, please provide a valid UUID v4 format",
     })
-    .describe("待執行任務的唯一標識符，必須是系統中存在的有效任務ID"),
+    .describe("The unique identifier of the task to be executed must be a valid task ID that exists in the system"),
 });
-
 export async function executeTask({
   taskId,
 }: z.infer<typeof executeTaskSchema>) {
   try {
-    // 檢查任務是否存在
+    // Check if the task exists
     const task = await getTaskById(taskId);
     if (!task) {
       return {
@@ -37,7 +36,7 @@ export async function executeTask({
       };
     }
 
-    // 檢查任務是否可以執行（依賴任務都已完成）
+    // Check whether the task can be executed (all dependencies have been completed)
     const executionCheck = await canExecuteTask(taskId);
     if (!executionCheck.canExecute) {
       const blockedByTasksText =
@@ -55,7 +54,7 @@ export async function executeTask({
       };
     }
 
-    // 如果任務已經標記為「進行中」，提示用戶
+    // If the task has been marked as "In Progress", prompt the user
     if (task.status === TaskStatus.IN_PROGRESS) {
       return {
         content: [
@@ -67,7 +66,7 @@ export async function executeTask({
       };
     }
 
-    // 如果任務已經標記為「已完成」，提示用戶
+    // If the task has been marked "Completed", prompt the user
     if (task.status === TaskStatus.COMPLETED) {
       return {
         content: [
@@ -79,13 +78,13 @@ export async function executeTask({
       };
     }
 
-    // 更新任務狀態為「進行中」
+    // Update the task status to "In Progress"
     await updateTaskStatus(taskId, TaskStatus.IN_PROGRESS);
 
-    // 評估任務複雜度
+    // Assess task complexity
     const complexityResult = await assessTaskComplexity(taskId);
 
-    // 將複雜度結果轉換為適當的格式
+    // Convert complexity results to the appropriate format
     const complexityAssessment = complexityResult
       ? {
           level: complexityResult.level,
@@ -97,7 +96,7 @@ export async function executeTask({
         }
       : undefined;
 
-    // 獲取依賴任務，用於顯示完成摘要
+    // Get dependency tasks to display completion summary
     const dependencyTasks: Task[] = [];
     if (task.dependencies && task.dependencies.length > 0) {
       for (const dep of task.dependencies) {
@@ -108,7 +107,7 @@ export async function executeTask({
       }
     }
 
-    // 加載任務相關的文件內容
+    // Load the file contents related to the task
     let relatedFilesSummary = "";
     if (task.relatedFiles && task.relatedFiles.length > 0) {
       try {
@@ -125,7 +124,7 @@ export async function executeTask({
       }
     }
 
-    // 使用prompt生成器獲取最終prompt
+    // Use the propt generator to get the final propt
     const prompt = await getExecuteTaskPrompt({
       task,
       complexityAssessment,

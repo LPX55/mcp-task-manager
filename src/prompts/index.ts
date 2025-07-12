@@ -1,13 +1,13 @@
 /**
- * Prompt 管理系統索引文件
- * 匯出所有 prompt 生成器和載入工具
+ * Prompt Management System Index Files
+ * Export all prompt generators and loading tools
  */
 
-// 匯出核心工具
+// Export core tools
 export { loadPrompt, generatePrompt } from "./loader.js";
 
-// 當完成各個模塊時，將在下方匯出各個 prompt 生成器
-// 例如：
+// When each module is completed, each prompt generator is exported below
+// For example:
 export { getPlanTaskPrompt } from "./generators/planTask.js";
 export { getAnalyzeTaskPrompt } from "./generators/analyzeTask.js";
 export { getReflectTaskPrompt } from "./generators/reflectTask.js";

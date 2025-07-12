@@ -1,4 +1,4 @@
-// 導出研究模式工具
+// Export research mode tool
 
-// researchMode
+// Research mode
 export { researchMode, researchModeSchema } from "./researchMode.js";

@@ -6,23 +6,23 @@ import { TaskStatus, Task } from "../../types/index.js";
 import { getPlanTaskPrompt } from "../../prompts/index.js";
 import { getMemoryDir } from "../../utils/paths.js";
 
-// 開始規劃工具
+// Start planning tools
 export const planTaskSchema = z.object({
   description: z
     .string()
     .min(10, {
-      message: "任務描述不能少於10個字符，請提供更詳細的描述以確保任務目標明確",
+      message: "The task description cannot be less than 10 characters. Please provide a more detailed description to ensure that the task objective is clear.",
     })
-    .describe("完整詳細的任務問題描述，應包含任務目標、背景及預期成果"),
+    .describe("A complete and detailed task problem description should include task objectives, background and expected results"),
   requirements: z
     .string()
     .optional()
-    .describe("任務的特定技術要求、業務約束條件或品質標準（選填）"),
+    .describe("Special technical requirements, business constraints or quality standards for tasks (optional)"),
   existingTasksReference: z
     .boolean()
     .optional()
     .default(false)
-    .describe("是否參考現有任務作為規劃基礎，用於任務調整和延續性規劃"),
+    .describe("Whether to refer to existing tasks as the basis for planning, for task adjustment and continuity planning"),
 });
 
 export async function planTask({
@@ -30,22 +30,22 @@ export async function planTask({
   requirements,
   existingTasksReference = false,
 }: z.infer<typeof planTaskSchema>) {
-  // 獲取基礎目錄路徑
+  // Get the basic directory path
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
   const PROJECT_ROOT = path.resolve(__dirname, "../../..");
   const MEMORY_DIR = await getMemoryDir();
 
-  // 準備所需參數
+  // Prepare the required parameters
   let completedTasks: Task[] = [];
   let pendingTasks: Task[] = [];
 
-  // 當 existingTasksReference 為 true 時，從數據庫中載入所有任務作為參考
+  // When existingTasksReference is true, load all tasks from the database as reference
   if (existingTasksReference) {
     try {
       const allTasks = await getAllTasks();
 
-      // 將任務分為已完成和未完成兩類
+      // Divide tasks into two categories: completed and unfinished
       completedTasks = allTasks.filter(
         (task) => task.status === TaskStatus.COMPLETED
       );
@@ -55,7 +55,7 @@ export async function planTask({
     } catch (error) {}
   }
 
-  // 使用prompt生成器獲取最終prompt
+  // Use the propt generator to get the final propt
   const prompt = await getPlanTaskPrompt({
     description,
     requirements,

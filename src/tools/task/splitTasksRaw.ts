@@ -7,7 +7,7 @@ import {
 import { RelatedFileType, Task } from "../../types/index.js";
 import { getSplitTasksPrompt } from "../../prompts/index.js";
 
-// 拆分任務工具
+// Split Task Tool
 export const splitTasksRawSchema = z.object({
   updateMode: z
     .enum(["append", "overwrite", "selective", "clearAllTasks"])
@@ -127,10 +127,10 @@ export async function splitTasksRaw({
     };
   }
 
-  // 使用 tasksSchema 驗證 tasks
+  // Verify tasks using tasksSchema
   const tasksResult = tasksSchema.safeParse(tasks);
   if (!tasksResult.success) {
-    // 返回錯誤訊息
+    // Return an error message
     return {
       content: [
         {
@@ -144,7 +144,7 @@ export async function splitTasksRaw({
   }
 
   try {
-    // 檢查 tasks 裡面的 name 是否有重複
+    // Check whether the name in tasks is duplicated
     const nameSet = new Set();
     for (const task of tasks) {
       if (nameSet.has(task.name)) {
@@ -160,14 +160,14 @@ export async function splitTasksRaw({
       nameSet.add(task.name);
     }
 
-    // 根據不同的更新模式處理任務
+    // Process tasks according to different update modes
     let message = "";
     let actionSuccess = true;
     let backupFile = null;
     let createdTasks: Task[] = [];
     let allTasks: Task[] = [];
 
-    // 將任務資料轉換為符合batchCreateOrUpdateTasks的格式
+    // Convert task data to a format that conforms to batch create or update tasks
     const convertedTasks = tasks.map((task) => ({
       name: task.name,
       description: task.description,
@@ -184,7 +184,7 @@ export async function splitTasksRaw({
       })),
     }));
 
-    // 處理 clearAllTasks 模式
+    // Handle clearAllTasks mode
     if (updateMode === "clearAllTasks") {
       const clearResult = await modelClearAllTasks();
 
@@ -193,7 +193,7 @@ export async function splitTasksRaw({
         backupFile = clearResult.backupFile;
 
         try {
-          // 清空任務後再創建新任務
+          // Create a new task after clearing it
           createdTasks = await batchCreateOrUpdateTasks(
             convertedTasks,
             "append",
@@ -211,7 +211,7 @@ export async function splitTasksRaw({
         message = clearResult.message;
       }
     } else {
-      // 對於其他模式，直接使用 batchCreateOrUpdateTasks
+      // For other modes, use batchCreateOrUpdateTasks directly
       try {
         createdTasks = await batchCreateOrUpdateTasks(
           convertedTasks,
@@ -219,7 +219,7 @@ export async function splitTasksRaw({
           globalAnalysisResult
         );
 
-        // 根據不同的更新模式生成消息
+        // Generate messages according to different update modes
         switch (updateMode) {
           case "append":
             message = `成功追加了 ${createdTasks.length} 個新任務。`;
@@ -239,14 +239,14 @@ export async function splitTasksRaw({
       }
     }
 
-    // 獲取所有任務用於顯示依賴關係
+    // Get all tasks for displaying dependencies
     try {
       allTasks = await getAllTasks();
     } catch (error) {
-      allTasks = [...createdTasks]; // 如果獲取失敗，至少使用剛創建的任務
+      allTasks = [...createdTasks]; // If the acquisition fails, at least use the task you just created
     }
 
-    // 使用prompt生成器獲取最終prompt
+    // Use the propt generator to get the final propt
     const prompt = await getSplitTasksPrompt({
       updateMode,
       createdTasks,

@@ -1,6 +1,6 @@
 /**
- * researchMode prompt 生成器
- * 負責將模板和參數組合成最終的 prompt
+ * researchMode prompt generator
+ * Responsible for combining templates and parameters into the final prompt
  */
 
 import {
@@ -10,7 +10,7 @@ import {
 } from "../loader.js";
 
 /**
- * researchMode prompt 參數介面
+ * researchMode prompt parameter interface
  */
 export interface ResearchModePromptParams {
   topic: string;
@@ -21,14 +21,14 @@ export interface ResearchModePromptParams {
 }
 
 /**
- * 獲取 researchMode 的完整 prompt
- * @param params prompt 參數
- * @returns 生成的 prompt
+ * Get the full prompt of researchMode
+ * @param params prompt parameter
+ * @returns Generated prompt
  */
 export async function getResearchModePrompt(
   params: ResearchModePromptParams
 ): Promise<string> {
-  // 處理之前的研究狀態
+  // Research status before processing
   let previousStateContent = "";
   if (params.previousState && params.previousState.trim() !== "") {
     const previousStateTemplate = await loadPromptFromTemplate(
@@ -41,7 +41,7 @@ export async function getResearchModePrompt(
     previousStateContent = "這是第一次進行此主題的研究，沒有之前的研究狀態。";
   }
 
-  // 載入主要模板
+  // Load the main template
   const indexTemplate = await loadPromptFromTemplate("researchMode/index.md");
   let prompt = generatePrompt(indexTemplate, {
     topic: params.topic,
@@ -52,6 +52,6 @@ export async function getResearchModePrompt(
     time: new Date().toLocaleString(),
   });
 
-  // 載入可能的自定義 prompt
+  // Load possible custom prompts
   return loadPrompt(prompt, "RESEARCH_MODE");
 }

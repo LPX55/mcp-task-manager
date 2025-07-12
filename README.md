@@ -1,6 +1,6 @@
-[English](README.md) | [中文](docs/zh/README.md)
+[English](README.md)
 
-## 目錄
+## Table of contents
 
 - [✨ Features](#features1)
 - [🧭 Usage Guide](#usage-guide)
@@ -18,15 +18,9 @@
 
 # MCP Shrimp Task Manager
 
-[![Shrimp Task Manager Demo](/docs/yt.png)](https://www.youtube.com/watch?v=Arzu0lV09so)
-
 [![smithery badge](https://smithery.ai/badge/@cjo4m06/mcp-shrimp-task-manager)](https://smithery.ai/server/@cjo4m06/mcp-shrimp-task-manager)
 
 > 🚀 An intelligent task management system based on Model Context Protocol (MCP), providing an efficient programming workflow framework for AI Agents.
-
-<a href="https://glama.ai/mcp/servers/@cjo4m06/mcp-shrimp-task-manager">
-  <img width="380" height="200" src="https://glama.ai/mcp/servers/@cjo4m06/mcp-shrimp-task-manager/badge" alt="Shrimp Task Manager MCP server" />
-</a>
 
 Shrimp Task Manager guides Agents through structured workflows for systematic programming, enhancing task memory management mechanisms, and effectively avoiding redundant and repetitive coding work.
 

@@ -6,10 +6,10 @@ import { getListTasksPrompt } from "../../prompts/index.js";
 export const listTasksSchema = z.object({
   status: z
     .enum(["all", "pending", "in_progress", "completed"])
-    .describe("要列出的任務狀態，可選擇 'all' 列出所有任務，或指定具體狀態"),
+    .describe("The task status to be listed, select 'all' to list all tasks, or specify specific status"),
 });
 
-// 列出任務工具
+// List task tools
 export async function listTasks({ status }: z.infer<typeof listTasksSchema>) {
   const tasks = await getAllTasks();
   let filteredTasks = tasks;
@@ -38,9 +38,9 @@ export async function listTasks({ status }: z.infer<typeof listTasksSchema>) {
       content: [
         {
           type: "text" as const,
-          text: `## 系統通知\n\n目前系統中沒有${
-            status === "all" ? "任何" : `任何 ${status} 的`
-          }任務。請查詢其他狀態任務或先使用「split_tasks」工具創建任務結構，再進行後續操作。`,
+          text: `## System Notification\n\nThere is currently no${
+            status === "all" ? "any" : `any ${status} of`
+          }Task. Please query other status tasks or use the "split_tasks" tool to create a task structure before performing subsequent operations.`,
         },
       ],
     };
@@ -54,7 +54,7 @@ export async function listTasks({ status }: z.infer<typeof listTasksSchema>) {
     return acc;
   }, {} as Record<string, typeof tasks>);
 
-  // 使用prompt生成器獲取最終prompt
+  // Use the propt generator to get the final propt
   const prompt = await getListTasksPrompt({
     status,
     tasks: tasksByStatus,
